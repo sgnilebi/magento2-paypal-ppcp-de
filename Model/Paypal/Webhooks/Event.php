@@ -180,7 +180,7 @@ class Event
         // notify customer
         if (!$this->_payment->getOrder()->getEmailSent()) {
             $this->_payment->getOrder()->addStatusHistoryComment(
-                    __('This order is on hold due to a pending payment. The order will be processed after the payment is approved at the payment gateway.')
+                    __('Diese Bestellung ist pausiert wegen einer ausstehenden Zahlung. Die Bestellung wird verarbeitet, sobald die Zahlung genehmigt wurde.')
                 )->setIsCustomerNotified(true)->save();
         }
     }
@@ -239,7 +239,7 @@ class Event
                 ->setStatus(\Magento\Sales\Model\Order::STATE_PROCESSING);
 
             $order->addStatusHistoryComment(
-                __('Thank you for your payment. Registered notification about captured amount.')
+                __('Vielen Dank für Ihre Zahlung. Betrag erfasst.')
             )->setIsCustomerNotified(true);
 
             $this->_orderRepository->save($order);
@@ -278,9 +278,9 @@ class Event
             ->setPreparedMessage($summary)
             ->setIsTransactionClosed(0);
 
-        $order
+        $this->_payment->getOrder()
             ->addCommentToStatusHistory(
-                __('A refund has been registered from PayPal | %1', $summary)
+                __('Eine Rückerstattung wurde von PayPal registriert | %1', $summary)
             )
             ->setIsCustomerNotified(true)
             ->save();
@@ -301,7 +301,7 @@ class Event
 
         $this->_payment->getOrder()
             ->addCommentToStatusHistory(
-                __('A reversal has been registered from PayPal | %1', $summary)
+                __('Eine Rückbuchung wurde von PayPal registriert | %1', $summary)
             )
             ->setIsCustomerNotified(true)
             ->save();
@@ -325,7 +325,7 @@ class Event
 
             $this->_payment->getOrder()
                 ->addCommentToStatusHistory(
-                    __('Your order %1 has been canceled.', $summary)
+                    __('Bestellung %1 wurde storniert.', $summary)
                 )->setIsCustomerNotified(true)
                 ->save();
 

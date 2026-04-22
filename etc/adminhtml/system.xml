@@ -82,6 +82,12 @@
                             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                             <config_path>payment/paypalcp/enable_acdc</config_path>
                         </field>
+                        <field id="enable_bcdc" type="select" sortOrder="112" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
+                            <label>BCDC aktivieren (PayPal Button mit Karten)</label>
+                            <comment>Zeigt Kreditkarte als Funding-Quelle im PayPal Button (nur wenn ACDC deaktiviert)</comment>
+                            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                            <config_path>payment/paypalcp/enable_bcdc</config_path>
+                        </field>
                         <field id="card_first_acdc" type="select" sortOrder="111" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
                             <label>Kreditkarte als erste Option</label>
                             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -111,7 +117,7 @@
                         </field>
                         <field id="layout" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
                             <label>Layout</label>
-                            <source_model>PayPal\CommercePlatform\Model\Config\Source\ButtonOptions::getLayout</source_model>
+                            <source_model>PayPal\CommercePlatform\Model\Config\Source\Button\Layout</source_model>
                             <depends>
                                 <field id="checkout_button_customize">1</field>
                             </depends>
@@ -119,7 +125,7 @@
                         </field>
                         <field id="color" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="40">
                             <label>Farbe</label>
-                            <source_model>PayPal\CommercePlatform\Model\Config\Source\ButtonOptions::getColor</source_model>
+                            <source_model>PayPal\CommercePlatform\Model\Config\Source\Button\Color</source_model>
                             <depends>
                                 <field id="checkout_button_customize">1</field>
                             </depends>
@@ -127,7 +133,7 @@
                         </field>
                         <field id="shape" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="50">
                             <label>Form</label>
-                            <source_model>PayPal\CommercePlatform\Model\Config\Source\ButtonOptions::getShape</source_model>
+                            <source_model>PayPal\CommercePlatform\Model\Config\Source\Button\Shape</source_model>
                             <depends>
                                 <field id="checkout_button_customize">1</field>
                             </depends>
@@ -135,7 +141,7 @@
                         </field>
                         <field id="label" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="60">
                             <label>Beschriftung</label>
-                            <source_model>PayPal\CommercePlatform\Model\Config\Source\ButtonOptions::getLabel</source_model>
+                            <source_model>PayPal\CommercePlatform\Model\Config\Source\Button\Label</source_model>
                             <depends>
                                 <field id="checkout_button_customize">1</field>
                             </depends>
@@ -143,7 +149,7 @@
                         </field>
                         <field id="tagline" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="50">
                             <label>Tagline</label>
-                            <source_model>PayPal\CommercePlatform\Model\Config\Source\ButtonOptions::getTagline</source_model>
+                            <source_model>PayPal\CommercePlatform\Model\Config\Source\Button\Tagline</source_model>
                             <depends>
                                 <field id="checkout_button_customize">1</field>
                             </depends>

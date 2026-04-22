@@ -1,53 +1,59 @@
 <?php
 /**
  * PayPal PPCP Button Options for Magento 2.2.3
+ * Source models for system.xml select fields
  */
 namespace PayPal\CommercePlatform\Model\Config\Source;
 
-class ButtonOptions
+class ButtonOptions implements \Magento\Framework\Option\ArrayInterface
 {
-    public function getLayout()
+    public function toOptionArray()
+    {
+        return [];
+    }
+
+    public static function getLayoutOptions()
     {
         return [
-            'vertical'   => __('Vertikal'),
-            'horizontal' => __('Horizontal')
+            ['value' => 'vertical', 'label' => __('Vertikal')],
+            ['value' => 'horizontal', 'label' => __('Horizontal')]
         ];
     }
 
-    public function getColor()
+    public static function getColorOptions()
     {
         return [
-            'gold'   => __('Gold'),
-            'blue'   => __('Blau'),
-            'silver' => __('Silber'),
-            'white'  => __('Weiß'),
-            'black'  => __('Schwarz')
+            ['value' => 'gold', 'label' => __('Gold')],
+            ['value' => 'blue', 'label' => __('Blau')],
+            ['value' => 'silver', 'label' => __('Silber')],
+            ['value' => 'white', 'label' => __('Weiß')],
+            ['value' => 'black', 'label' => __('Schwarz')]
         ];
     }
 
-    public function getShape()
+    public static function getShapeOptions()
     {
         return [
-            'pill' => __('Abgerundet'),
-            'rect' => __('Rechteckig')
+            ['value' => 'pill', 'label' => __('Abgerundet')],
+            ['value' => 'rect', 'label' => __('Rechteckig')]
         ];
     }
 
-    public function getLabel()
+    public static function getLabelOptions()
     {
         return [
-            'checkout'    => __('Checkout'),
-            'pay'         => __('Bezahlen'),
-            'buynow'      => __('Sofort kaufen'),
-            'paypal'      => __('PayPal'),
+            ['value' => 'checkout', 'label' => __('Checkout')],
+            ['value' => 'pay', 'label' => __('Bezahlen')],
+            ['value' => 'buynow', 'label' => __('Sofort kaufen')],
+            ['value' => 'paypal', 'label' => __('PayPal')]
         ];
     }
 
-    public function getTagline()
+    public static function getTaglineOptions()
     {
         return [
-            'true'  => __('Ja'),
-            'false' => __('Nein')
+            ['value' => 'true', 'label' => __('Ja')],
+            ['value' => 'false', 'label' => __('Nein')]
         ];
     }
 }
