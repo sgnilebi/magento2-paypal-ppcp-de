@@ -1,4 +1,8 @@
-.card_container button {
+/* PayPal PPCP Checkout Styles for DE */
+
+/* Card submit button */
+.card_container button,
+#card-form button#submit {
     margin: 15px 0;
     height: 50px;
     font-size: 16px;
@@ -8,8 +12,20 @@
     font-weight: 500;
     cursor: pointer;
     background: #ffc439;
+    color: #003087;
 }
 
+#card-form button#submit:hover:not(:disabled) {
+    background: #f0b824;
+}
+
+#card-form button#submit:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    color: #666;
+}
+
+/* Loader */
 #loader {
     display: none;
     width: 80px;
@@ -50,22 +66,14 @@
 }
 
 @keyframes lds-ring {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.show {
-    display: block !important;
-}
+.show { display: block !important; }
+.hide { display: none !important; }
 
-.hide {
-    display: none !important;
-}
-
+/* Card form fields */
 .form-control,
 .card_field {
     margin: 10px 0;
@@ -110,6 +118,55 @@ label {
     margin-bottom: 1rem;
 }
 
+/* Divider between PayPal and Card sections */
 .divider {
     margin: 20px 0;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 20px;
+}
+
+/* Separate payment method containers — cleaner spacing */
+#acdc_button .payment-method-content,
+#acdc_card .payment-method-content {
+    padding: 10px 0;
+}
+
+/* Funding source button containers */
+#paypal-paylater-container,
+#paypal-sepa-container,
+#paypal-applepay-container {
+    min-height: 0;
+}
+
+/* When container is empty (button not eligible), collapse it */
+#paypal-paylater-container:empty,
+#paypal-sepa-container:empty,
+#paypal-applepay-container:empty {
+    min-height: 0;
+    margin-top: 0;
+}
+
+/* PayPal Messages widget */
+#paypal-messages-container {
+    text-align: center;
+}
+
+/* Credentials error message */
+.ppcp-cred-error {
+    padding: 15px;
+    color: #e02b27;
+    font-size: 14px;
+}
+
+/* Card brand icons row */
+.ppcc-card-icons {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+    align-items: center;
+}
+
+.pppc-card-icons img {
+    height: 24px;
+    width: auto;
 }

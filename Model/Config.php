@@ -2,6 +2,7 @@
 /**
  * PayPal PPCP Config for Magento 2.2.3
  * Based on QBO PayPal Commerce Platform — adapted for DE/EUR
+ * Added: Funding source options (SEPA, Pay Later, Apple Pay, Messages)
  */
 namespace PayPal\CommercePlatform\Model;
 
@@ -35,6 +36,14 @@ class Config
     const XML_CONFIG_SHAPE   = 'checkout_button/shape';
     const XML_CONFIG_LABEL   = 'checkout_button/label';
     const XML_CONFIG_TAGLINE = 'checkout_button/tagline';
+
+    /**
+     * Funding source options
+     */
+    const CONFIG_XML_ENABLE_SEPA      = 'enable_sepa';
+    const CONFIG_XML_ENABLE_PAYLATER  = 'enable_paylater';
+    const CONFIG_XML_ENABLE_APPLEPAY  = 'enable_applepay';
+    const CONFIG_XML_ENABLE_MESSAGES  = 'enable_messages';
 
     /**
      * @var \Magento\Framework\App\Config\ScopeConfigInterface
@@ -147,5 +156,35 @@ class Config
     public function isCardFirstAcdc()
     {
         return $this->isSetFlag(self::CONFIG_XML_CARD_FIRST_ACDC);
+    }
+
+    public function isEnableSepa()
+    {
+        return $this->isSetFlag(self::CONFIG_XML_ENABLE_SEPA);
+    }
+
+    public function isEnablePayLater()
+    {
+        return $this->isSetFlag(self::CONFIG_XML_ENABLE_PAYLATER);
+    }
+
+    public function isEnableApplePay()
+    {
+        return $this->isSetFlag(self::CONFIG_XML_ENABLE_APPLEPAY);
+    }
+
+    public function isEnableMessages()
+    {
+        return $this->isSetFlag(self::CONFIG_XML_ENABLE_MESSAGES);
+    }
+
+    /**
+     * Check if credentials are configured
+     */
+    public function hasCredentials()
+    {
+        $clientId = $this->getClientId();
+        $secretId = $this->getSecretId();
+        return !empty($clientId) && !empty($secretId);
     }
 }

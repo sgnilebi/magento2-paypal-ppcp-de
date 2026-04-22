@@ -11,10 +11,29 @@ define([
         paypalSdk: window.checkoutConfig.payment.paypalcp.urlSdk,
         onLoadedCallback: '',
         isAcdcEnable: window.checkoutConfig.payment.paypalcp.acdc.enable,
+        hasCredentials: window.checkoutConfig.payment.paypalcp.hasCredentials,
 
         loadSdk: function (callbackOnLoaded) {
             var self = this;
             self.onLoadedCallback = callbackOnLoaded;
+
+            // Check if credentials are configured
+            if (!self.hasCredentials || !self.paypalSdk) {
+                console.error('[PayPal PPCP] Credentials not configured. Please enter Client ID and Secret in backend.');
+                var containers = [
+                    document.getElementById('paypal-button-container'),
+                    document.getElementById('card-button-container'),
+                    document.getElementById('paypal-paylater-container'),
+                    document.getElementById('paypal-sepa-container'),
+                    document.getElementById('paypal-applepay-container')
+                ];
+                containers.forEach(function(container) {
+                    if (container) {
+                        container.innerHTML = '<div style="padding:15px;color:#e02b27;font-size:14px;">PayPal ist nicht konfiguriert. Bitte kontaktieren Sie den Shop-Betreiber.</div>';
+                    }
+                });
+                return;
+            }
 
             if (typeof paypal === 'undefined') {
 

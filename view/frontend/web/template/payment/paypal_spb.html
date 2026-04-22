@@ -1,3 +1,4 @@
+<!-- BCDC mode: Card inside PayPal Button -->
 <div class="ppcp payment-method"
      data-bind="css: {'_active': ( 'paypalspb_card' == isSelected())}, attr: {isSel: isSelected()}, visible: isActiveBcdc()">
     <div class="payment-method-title field choice">
@@ -42,6 +43,15 @@
         <!-- /ko -->
 
         <div id="paypal-button-container" style="min-height: 50px;"></div>
+
+        <!-- Additional funding source buttons -->
+        <div id="paypal-paylater-container" data-bind="visible: isPayLaterEnabled()" style="min-height: 50px; margin-top: 10px;"></div>
+        <div id="paypal-sepa-container" style="min-height: 50px; margin-top: 10px;"></div>
+        <div id="paypal-applepay-container" style="min-height: 50px; margin-top: 10px;"></div>
+
+        <!-- Pay Later messages widget -->
+        <div id="paypal-messages-container" data-bind="visible: isPayLaterEnabled()" style="margin-top: 10px;"></div>
+
         <div class="checkout-agreements-block">
             <!-- ko foreach: $parent.getRegion('before-place-order') -->
             <!-- ko template: getTemplate() -->

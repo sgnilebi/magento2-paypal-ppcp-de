@@ -15,6 +15,14 @@
 
         <div id="paypal-button-container" style="min-height: 50px;"></div>
 
+        <!-- Additional funding source buttons -->
+        <div id="paypal-paylater-container" data-bind="visible: isPayLaterEnabled()" style="min-height: 50px; margin-top: 10px;"></div>
+        <div id="paypal-sepa-container" style="min-height: 50px; margin-top: 10px;"></div>
+        <div id="paypal-applepay-container" style="min-height: 50px; margin-top: 10px;"></div>
+
+        <!-- Pay Later messages widget -->
+        <div id="paypal-messages-container" data-bind="visible: isPayLaterEnabled()" style="margin-top: 10px;"></div>
+
         <div class="checkout-agreements-block">
             <!-- ko foreach: $parent.getRegion('before-place-order') -->
             <!-- ko template: getTemplate() -->

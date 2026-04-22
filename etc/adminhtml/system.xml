@@ -32,7 +32,7 @@
                     <field id="webhook_id" translate="label" type="obscure" sortOrder="54" showInDefault="1" showInWebsite="1">
                         <label>Webhook ID</label>
                         <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                        <comment>Webhook ID aus dem PayPal-Dashboard. Webhook-URL: https://www.ihre-domain.de/paypalcheckout/webhooks</comment>
+                        <comment>Webhook ID aus dem PayPal-Dashboard. Webhook-URL: https://www.meinereitwelt.de/paypalcheckout/webhooks</comment>
                         <config_path>payment/paypalcp/webhook_id</config_path>
                     </field>
                     <field id="title" type="text" sortOrder="60" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
@@ -94,6 +94,37 @@
                             <config_path>payment/paypalcp/card_fisrt_acdc</config_path>
                             <depends>
                                 <field id="enable_acdc">1</field>
+                            </depends>
+                        </field>
+                    </group>
+                    <group id="funding_sources" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="120">
+                        <label>Zahlungsmethoden (Funding Sources)</label>
+                        <comment>Additional payment methods available via PayPal SDK for the DE market</comment>
+                        <field id="enable_sepa" type="select" sortOrder="121" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
+                            <label>SEPA-Lastschrift</label>
+                            <comment>Zeigt SEPA-Lastschrift Button im Checkout (nur für DE-Kunden)</comment>
+                            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                            <config_path>payment/paypalcp/enable_sepa</config_path>
+                        </field>
+                        <field id="enable_paylater" type="select" sortOrder="122" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
+                            <label>Pay Later (Später bezahlen / Ratenkauf)</label>
+                            <comment>PayPal "Später bezahlen" (30 Tage), "In 3 Raten" (ab 30€) und Ratenzahlung (ab 199€)</comment>
+                            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                            <config_path>payment/paypalcp/enable_paylater</config_path>
+                        </field>
+                        <field id="enable_applepay" type="select" sortOrder="123" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
+                            <label>Apple Pay</label>
+                            <comment>Erfordert Domain-Verifizierung im PayPal Dashboard und Apple Merchant ID. Nur auf Safari/iOS sichtbar.</comment>
+                            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                            <config_path>payment/paypalcp/enable_applepay</config_path>
+                        </field>
+                        <field id="enable_messages" type="select" sortOrder="124" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
+                            <label>Pay Later Nachrichten-Widget</label>
+                            <comment>Zeigt "Später bezahlen"-Informationen beim Checkout an. Erfordert Pay Later aktiviert.</comment>
+                            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                            <config_path>payment/paypalcp/enable_messages</config_path>
+                            <depends>
+                                <field id="enable_paylater">1</field>
                             </depends>
                         </field>
                     </group>

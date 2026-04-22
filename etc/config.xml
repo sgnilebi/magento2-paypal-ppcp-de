@@ -30,6 +30,11 @@
                 <debug_mode>0</debug_mode>
                 <title_paypal>PayPal</title_paypal>
                 <title_card>Kreditkarte / Debitkarte</title_card>
+                <!-- Funding Sources for DE -->
+                <enable_sepa>1</enable_sepa>
+                <enable_paylater>1</enable_paylater>
+                <enable_applepay>0</enable_applepay>
+                <enable_messages>1</enable_messages>
             </paypalcp>
             <paypalspb>
                 <active>1</active>

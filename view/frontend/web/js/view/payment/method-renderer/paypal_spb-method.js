@@ -67,12 +67,42 @@ define(
                 return this;
             },
 
+            /**
+             * Validate that the grand total hasn't changed since the PayPal order was created.
+             * Called before placeOrder to prevent amount mismatch.
+             * Returns a Promise that resolves when totals are validated.
+             */
+            validateGrandTotal: function () {
+                var self = this;
+                return new Promise(function (resolve) {
+                    var currentGrandTotal = parseFloat(quote.totals().base_grand_total);
+                    var previousGrandTotal = parseFloat(self.grandTotal());
+
+                    if (previousGrandTotal !== currentGrandTotal) {
+                        self.logger('Grand total changed: ' + previousGrandTotal + ' → ' + currentGrandTotal);
+                        self.grandTotal(currentGrandTotal);
+                        // Re-render buttons with new amount
+                        var container = document.getElementById('paypal-button-container');
+                        if (container) {
+                            container.innerHTML = '';
+                            self.renderButtons();
+                        }
+                    }
+                    self.grandTotal(currentGrandTotal);
+                    resolve();
+                });
+            },
+
             isActiveBcdc: function () {
                 return (this.isBcdcEnable && !this.isAcdcEnable);
             },
 
             isActiveAcdc: function () {
                 return this.isAcdcEnable;
+            },
+
+            isPayLaterEnabled: function () {
+                return this.paypalConfigs.funding && this.paypalConfigs.funding.paylater;
             },
 
             isSelected: function () {
@@ -127,6 +157,48 @@ define(
                 return data;
             },
 
+            /**
+             * Create PayPal order via server endpoint.
+             * Shared between PayPal button and HostedFields.
+             */
+            createOrder: function () {
+                return fetch('/paypalcheckout/order', {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({})
+                }).then(function (res) {
+                    if (res.ok) {
+                        return res.json();
+                    } else {
+                        return res.json().then(function (errData) {
+                            var errMsg = $t('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+                            if (errData && errData.reason) {
+                                try {
+                                    var parsed = JSON.parse(errData.reason);
+                                    if (parsed && parsed.message) {
+                                        errMsg = parsed.message;
+                                    }
+                                } catch (e) {
+                                    // Not JSON, use default message
+                                }
+                            }
+                            throw new Error(errMsg);
+                        });
+                    }
+                }).then(function (data) {
+                    if (data && data.result && data.result.id) {
+                        return data.result.id;
+                    }
+                    if (data && data.reason) {
+                        throw new Error(data.reason);
+                    }
+                    throw new Error($t('PayPal Order konnte nicht erstellt werden.'));
+                });
+            },
+
             renderButton: function (fundingSource, elementId) {
                 var self = this;
 
@@ -146,37 +218,25 @@ define(
                     };
                 }
 
-                paypal.Buttons({
+                // For non-PayPal funding sources (Apple Pay, SEPA etc.), override style
+                if (fundingSource && fundingSource !== paypal.FUNDING.PAYPAL) {
+                    buttonStyle.layout = buttonStyle.layout || 'vertical';
+                    if (!buttonStyle.color) buttonStyle.color = 'black';
+                    if (!buttonStyle.shape) buttonStyle.shape = 'rect';
+                }
+
+                var button = paypal.Buttons({
                     style: buttonStyle,
                     fundingSource: fundingSource,
                     createOrder: function () {
-                        var body = JSON.stringify({});
-                        return fetch('/paypalcheckout/order', {
-                            method: 'post',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: body
-                        }).then(function (res) {
-                            if (res.ok) {
-                                return res.json();
-                            } else {
-                                self.messageContainer.addErrorMessage({
-                                    message: $t('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.')
-                                });
-                                return false;
-                            }
-                        }).then(function (data) {
-                            if (data && data.result && data.result.id) {
-                                return data.result.id;
-                            }
-                            return false;
-                        });
+                        self.logger('createOrder for fundingSource: ' + (fundingSource || 'default'));
+                        return self.createOrder();
                     },
                     onApprove: function (data) {
                         self.orderId = data.orderID;
-                        self.placeOrder();
+                        self.validateGrandTotal().then(function () {
+                            self.placeOrder();
+                        });
                     },
                     onCancel: function () {
                         self.logger('PayPal payment cancelled by user');
@@ -187,7 +247,18 @@ define(
                             message: $t('Die Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.')
                         });
                     }
-                }).render('#' + elementId);
+                });
+
+                if (button.isEligible()) {
+                    button.render('#' + elementId);
+                } else {
+                    self.logger('Button not eligible for fundingSource: ' + fundingSource);
+                    var container = document.getElementById(elementId);
+                    if (container) {
+                        container.innerHTML = '';
+                        container.style.minHeight = '0';
+                    }
+                }
             },
 
             renderButtons: function () {
@@ -198,10 +269,50 @@ define(
                     return;
                 }
 
+                // Always render PayPal button
                 var paypalContainer = document.getElementById('paypal-button-container');
                 if (paypalContainer) {
                     paypalContainer.innerHTML = '';
                     self.renderButton(paypal.FUNDING.PAYPAL, 'paypal-button-container');
+                }
+
+                // Render Pay Later button if enabled (separate from PayPal button)
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.paylater) {
+                    var paylaterContainer = document.getElementById('paypal-paylater-container');
+                    if (paylaterContainer) {
+                        paylaterContainer.innerHTML = '';
+                        self.renderButton(paypal.FUNDING.PAYLATER, 'paypal-paylater-container');
+                    }
+                }
+
+                // Render SEPA button if enabled
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.sepa) {
+                    var sepaContainer = document.getElementById('paypal-sepa-container');
+                    if (sepaContainer) {
+                        sepaContainer.innerHTML = '';
+                        self.renderButton(paypal.FUNDING.SEPA, 'paypal-sepa-container');
+                    }
+                }
+
+                // Render Apple Pay button if eligible
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.applepay) {
+                    var applepayContainer = document.getElementById('paypal-applepay-container');
+                    if (applepayContainer) {
+                        applepayContainer.innerHTML = '';
+                        self.renderButton(paypal.FUNDING.APPLE_PAY, 'paypal-applepay-container');
+                    }
+                }
+
+                // Render Pay Later messages widget
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.messages) {
+                    var messagesContainer = document.getElementById('paypal-messages-container');
+                    if (messagesContainer && paypal.Messages) {
+                        paypal.Messages({
+                            amount: parseFloat(self.grandTotal()),
+                            currency: 'EUR',
+                            placement: 'payment'
+                        }).render('#paypal-messages-container');
+                    }
                 }
             },
 

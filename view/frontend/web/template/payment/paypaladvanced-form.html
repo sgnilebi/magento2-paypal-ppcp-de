@@ -1,3 +1,4 @@
+<!-- PayPal Button — separate Zahlungsmethode -->
 <div id="acdc_button" class="ppcp payment-method"
     data-bind="css: {'_active': ( 'paypalcp_spb' == isSelected())}, attr: {isSel: isSelected()}, visible: isVisibleCard()">
     <div class="payment-method-title field choice">
@@ -15,9 +16,38 @@
 
         <div id="paypal-button-container" style="min-height: 50px;"></div>
 
-        <!-- Kreditkarten-Felder -->
-        <div class="divider"></div>
-        <div id="paypalcheckout">
+        <!-- PayPal Pay Later Nachrichten-Widget -->
+        <div id="paypal-messages-container" data-bind="visible: isPayLaterEnabled()" style="margin-top: 10px;"></div>
+
+        <div class="checkout-agreements-block">
+            <!-- ko foreach: $parent.getRegion('before-place-order') -->
+            <!-- ko template: getTemplate() -->
+            <!-- /ko -->
+            <!-- /ko -->
+        </div>
+        <div class="actions-toolbar">
+            <div class="primary" data-bind="attr: {'id': getCode('paypalcp')}"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Kreditkarte — separate Zahlungsmethode -->
+<div id="acdc_card" class="ppcp payment-method"
+    data-bind="css: {'_active': ( 'paypalcp_hf' == isSelected())}, visible: isVisibleCard()">
+    <div class="payment-method-title field choice">
+        <input type="radio" name="payment[method]" class="radio"
+            data-bind="attr: {'id': getCode('paypalcp_hf')}, value: 'paypalcp', checked: isChecked, click: selectedPayPalMethod('paypalcp_hf'), visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode('paypalcp_hf')}">
+            <span data-bind="text: getTitleMethodCard()"></span>
+        </label>
+    </div>
+    <div class="payment-method-content">
+        <!-- ko foreach: getRegion('messages') -->
+        <!-- ko template: getTemplate() -->
+        <!-- /ko -->
+        <!-- /ko -->
+
+        <div id="paypalcheckout" data-bind="afterRender:completeRender()">
             <form id="card-form" class="form-inline" novalidate>
                 <div class="form-group">
                     <label for="card-holder-name">Karteninhaber</label>
@@ -46,9 +76,7 @@
             <!-- /ko -->
         </div>
         <div class="actions-toolbar">
-            <div class="primary" data-bind="attr: {'id': getCode('paypalcp')}"></div>
+            <div class="primary" data-bind="attr: {'id': getCode('paypalcp_hf')}"></div>
         </div>
     </div>
 </div>
-
-<div data-bind="afterRender:completeRender() "></div>
