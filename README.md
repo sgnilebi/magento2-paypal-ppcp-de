@@ -2,7 +2,7 @@
 
 **PayPal PPCP (Complete Payments Platform) für Magento 2.2.3 — DE/EUR**
 
-Basierend auf dem QBO PayPal Commerce Platform Modul (Mexico), vollständig angepasst für **meinereitwelt.de** (Reitsport-Shop, Deutschland).
+> **Attribution Notice:** This is a derivative work based on [QBO Tech's PayPal Commerce Platform module](https://github.com/qbo-tech/magento2-paypal-commerce-platform) (v1.7.1), licensed under the Open Software License 3.0 (OSL-3.0). Significant modifications have been made for the German market — see below. This derivative work is also licensed under OSL-3.0.
 
 ---
 
@@ -185,4 +185,12 @@ PayPal/CommercePlatform/
 
 ## Lizenz
 
-Basierend auf QBO Module (Apache 2.0 Lizenz). Siehe LICENSE.txt.
+**Open Software License 3.0 (OSL-3.0)**
+
+Dieses Modul ist ein Derivative Work des [QBO PayPal Commerce Platform Moduls](https://github.com/qbo-tech/magento2-paypal-commerce-platform) von QBO Tech. Das Original steht unter OSL-3.0, und gemäß §1c der Lizenz wird dieses Derivative Work unter der gleichen Lizenz veröffentlicht.
+
+Siehe [LICENSE.txt](LICENSE.txt) für den vollständigen Lizenztext.
+
+**Original-Autor:** QBO Tech — https://github.com/qbo-tech  
+**Derivative Work:** sgnilebi — https://github.com/sgnilebi  
+**Änderungen:** Lokalisierung DE/EUR, Entfernung von Oxxo/STC/Billing/Vault/FraudNet, PHP 7.0 Kompatibilität, Security Fixes
