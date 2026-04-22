@@ -13,7 +13,7 @@ Basiert auf [qbo-tech/magento2-paypal-commerce-platform](https://github.com/qbo-
 | SEPA-Lastschrift | `enable-funding=sepa` | Lastschrift für DE-Kunden |
 | Pay Later | `enable-funding=paylater` | "Später bezahlen" (30d), "In 3 Raten" (ab 30€), Ratenzahlung (ab 199€) |
 | Pay Later Messages | `components=messages` | Informations-Widget beim Checkout |
-| Apple Pay | `enable-funding=applepay` | Erfordert Apple Developer Account + Domain-Verifizierung |
+| Apple Pay | `enable-funding=applepay` | PayPal übernimmt Apple Merchant ID — nur Domain-Verifizierung im PayPal Dashboard nötig |
 
 ## Voraussetzungen
 
