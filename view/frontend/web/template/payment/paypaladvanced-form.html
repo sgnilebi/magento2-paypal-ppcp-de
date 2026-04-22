@@ -1,0 +1,54 @@
+<div id="acdc_button" class="ppcp payment-method"
+    data-bind="css: {'_active': ( 'paypalcp_spb' == isSelected())}, attr: {isSel: isSelected()}, visible: isVisibleCard()">
+    <div class="payment-method-title field choice">
+        <input type="radio" name="payment[method]" class="radio"
+            data-bind="attr: {'id': getCode('paypalcp_spb')}, value: 'paypalcp', checked: isChecked, click: selectedPayPalMethod('paypalcp_spb'), visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode('paypalcp_spb')}">
+            <span data-bind="text: getTitleMethodPaypal()"></span>
+        </label>
+    </div>
+    <div class="payment-method-content">
+        <!-- ko foreach: getRegion('messages') -->
+        <!-- ko template: getTemplate() -->
+        <!-- /ko -->
+        <!-- /ko -->
+
+        <div id="paypal-button-container" style="min-height: 50px;"></div>
+
+        <!-- Kreditkarten-Felder -->
+        <div class="divider"></div>
+        <div id="paypalcheckout">
+            <form id="card-form" class="form-inline" novalidate>
+                <div class="form-group">
+                    <label for="card-holder-name">Karteninhaber</label>
+                    <input type="text" class="form-control" id="card-holder-name" placeholder="Vor- und Nachname" />
+                </div>
+                <div class="form-group">
+                    <label for="card-number">Kartennummer</label>
+                    <div id="card-number" class="card_field"></div>
+                </div>
+                <div class="form-group">
+                    <label for="expiration-date">Ablaufdatum</label>
+                    <div id="expiration-date" class="card_field"></div>
+                </div>
+                <div class="form-group">
+                    <label for="cvv">Sicherheitscode</label>
+                    <div id="cvv" class="card_field"></div>
+                </div>
+                <button value="submit" id="submit" class="btn" disabled="disable">Zahlung bestätigen</button>
+            </form>
+        </div>
+
+        <div class="checkout-agreements-block">
+            <!-- ko foreach: $parent.getRegion('before-place-order') -->
+            <!-- ko template: getTemplate() -->
+            <!-- /ko -->
+            <!-- /ko -->
+        </div>
+        <div class="actions-toolbar">
+            <div class="primary" data-bind="attr: {'id': getCode('paypalcp')}"></div>
+        </div>
+    </div>
+</div>
+
+<div data-bind="afterRender:completeRender() "></div>

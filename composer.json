@@ -1,0 +1,19 @@
+{
+    "name": "meinereitwelt/module-paypal-commerce-platform",
+    "description": "PayPal Commerce Platform (PPCP) for Magento 2.2 — adapted for DE/EUR",
+    "type": "magento2-module",
+    "license": "OSL-3.0",
+    "require": {
+        "paypal/paypal-checkout-sdk": "^1.0"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "PayPal\\CommercePlatform\\": ""
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
