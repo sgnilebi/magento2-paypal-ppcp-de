@@ -13,6 +13,7 @@
                 <value id="paypal" type="host">*.paypal.com</value>
                 <value id="sandbospaypal" type="host">*.sandbox.paypal.com</value>
                 <value id="paypalobjects" type="host">*.paypalobjects.com</value>
+                <value id="creditapi" type="host">creditapplicant.paypal.com</value>
             </values>
         </policy>
         <policy id="frame-src">
