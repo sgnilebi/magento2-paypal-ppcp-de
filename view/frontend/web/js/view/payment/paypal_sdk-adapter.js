@@ -16,11 +16,9 @@ define([
             var self = this;
             self.onLoadedCallback = callbackOnLoaded;
 
-            var componentUrl = self.paypalSdk;
-            var clientToken = null;
-
             if (typeof paypal === 'undefined') {
 
+                var clientToken = null;
                 if (self.isAcdcEnable) {
                     clientToken = paypalTokenAdapter.generateClientToken();
                 }
@@ -48,13 +46,15 @@ define([
                 window.CancelCallback = $.proxy(objCallback, "cancelCallback");
                 window.CompletedCallback = $.proxy(objCallback, "completeCallback");
 
+                // IMPORTANT: data-client-token must be set on the script element
+                // Attributes are set BEFORE the script executes (async download happens first)
                 requirejs.load({
                     contextName: '_',
                     onScriptLoad: $.proxy(objCallback, "onLoadedCallback"),
                     config: {
-                        baseUrl: componentUrl
+                        baseUrl: self.paypalSdk
                     }
-                }, self.componentName, componentUrl);
+                }, self.componentName, self.paypalSdk);
 
                 var htmlElement = $('[data-requiremodule="' + self.componentName + '"]')[0];
 
@@ -74,5 +74,4 @@ define([
             }
         }
     };
-}
-);
+});

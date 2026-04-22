@@ -76,9 +76,13 @@ class Token
     {
         $customerId = $this->_customer->getId();
         $generateTokenRequest = $this->_paypalApi->getGenerateTokenRequest($accessToken, $customerId);
-        $generateTokenRequest->body = [
-            'customer_id' => $customerId
-        ];
+
+        $body = [];
+        if ($customerId) {
+            $body['customer_id'] = $customerId;
+        }
+
+        $generateTokenRequest->body = $body;
 
         try {
             $this->_eventManager->dispatch('paypalcp_generate_token_before', ['quote' => $this->_quote, 'customer' => $this->_customer]);

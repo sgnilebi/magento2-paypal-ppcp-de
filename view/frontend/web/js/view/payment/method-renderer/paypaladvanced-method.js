@@ -229,9 +229,6 @@ define(
                     style: {
                         layout: 'horizontal'
                     },
-                    funding: {
-                        disallowed: [paypal.FUNDING.CARD, paypal.FUNDING.CREDIT]
-                    },
                     commit: true,
                     createOrder: function () {
                         return fetch('/paypalcheckout/order', {
