@@ -1,38 +1,188 @@
-# Magento 2: qbo/module-paypal-commerce-platform payment module (MX)
-Magento 2 PayPal Commerce Platform (México)
+# magento2-paypal-ppcp-de
 
-# Installation via composer (recommend)
+**PayPal PPCP (Complete Payments Platform) für Magento 2.2.3 — DE/EUR**
 
-1. Setup your composer/github credentials locally.
-2. From the root folder of your project run:
+Basierend auf dem QBO PayPal Commerce Platform Modul (Mexico), vollständig angepasst für **meinereitwelt.de** (Reitsport-Shop, Deutschland).
+
+---
+
+## Was wurde geändert?
+
+| Bereich | Original (QBO/Mexico) | Angepasst (DE/EUR) |
+|---------|----------------------|-------------------|
+| Sprache/Lokalisierung | Mexiko, MXN, Spanisch | Deutschland, EUR, Deutsch |
+| Zahlungsmethoden | PayPal + Oxxo + STC | PayPal Smart Buttons + ACDC (Kreditkarten) |
+| Billing Agreements | Ja (Token, Financing) | Nein — komplett entfernt |
+| Vault (speichern von Karten) | Ja | Nein — entfernt |
+| FraudNet (Betrugserkennung) | Ja | Nein — entfernt |
+| authorizationBasic (Frontend) | ❌ Client-Secret an JS gesendet | ✅ Komplett entfernt (Security Fix) |
+| CSRF Skip Plugin | ❌ Falscher Modulname, kaputt | ✅ Entfernt (Webhook nutzt CsrfAwareActionInterface) |
+| PHP 7.0 | Nein (7.1+ Features) | ✅ Ja (nullable types, strict_types entfernt) |
+| Dateien | 117 | 46 (60% Reduktion) |
+| Zeilen | ~8.200 | ~3.600 (56% Reduktion) |
+
+---
+
+## Installation
+
+### 1. Modul kopieren
+
+```bash
+cd /var/www/meinereitwelt/app/code/PayPal/
+git clone https://github.com/sgnilebi/magento2-paypal-ppcp-de.git CommercePlatform
 ```
-composer require qbo/module-paypal-commerce-platform --ignore-platform-reqs
-php bin/magento setup:upgrade
-php bin/magento setup:di:compile
-php bin/magento setup:static-content:deploy
+
+### 2. PayPal SDK installieren
+
+```bash
+cd /var/www/meinereitwelt
+composer require paypal/paypal-checkout-sdk:^1.0 --ignore-platform-reqs
 ```
 
-# Configuration
+### 3. Magento Setup (IMMER als www-data!)
 
-- Module configurations us found at: Stores -> Configuration -> Sales -> Payment Methods -> PayPal Checkout Mexico
-- Select "Mexico" for Merchant Location under Payment Methods Configuration
-- Get your REST APP Credentiasl from https://developer.paypal.com
-- Enter your PayPal API credentials under PayPal Checkout Mexico Module configuration.
-- Set Sandbox/Live Mode
-- Save and clean the cache.
-
-# Upgrading to specific version
-
-From the root folder of your project:
+```bash
+sudo -u www-data php bin/magento setup:upgrade
+sudo -u www-data php bin/magento setup:di:compile
+sudo -u www-data php bin/magento setup:static-content:deploy de_DE
+sudo -u www-data php bin/magento cache:clean
 ```
-composer require qbo/module-paypal-commerce-platform:$version --ignore-platform-reqs
-e.g: composer require qbo/module-paypal-commerce-platform:v1.6.1 --ignore-platform-reqs
 
-php bin/magento setup:upgrade
-php bin/magento setup:di:compile
-rm -rf var/generation var/di var/view_preprocessed pub/static
-php bin/magento setup:static-content:deploy
+⚠️ **WICHTIG**: Niemals `php bin/magento` als root! Immer als `www-data`.
+
+---
+
+## Konfiguration
+
+### PayPal Sandbox App erstellen
+
+1. Gehe zu https://developer.paypal.com/dashboard/
+2. Erstelle eine neue App unter "Apps & Credentials"
+3. Sandbox-Modus: Client-ID + Secret kopieren
+
+### Backend-Einstellungen
+
+Stores → Konfiguration → Verkäufe → Zahlungsmethoden → PayPal PPCP
+
+| Einstellung | Beschreibung |
+|-------------|-------------|
+| Aktiviert | Ja |
+| Sandbox-Modus | Ja (zum Testen), Nein (Live) |
+| Client-ID | Von PayPal Developer Dashboard |
+| Client-Secret | Von PayPal Developer Dashboard |
+| ACDC aktivieren | Ja (Kreditkarten-Felder) |
+| Button-Stil | Color, Shape, Size konfigurierbar |
+
+### Webhook einrichten
+
+1. In PayPal Developer Dashboard: Webhook erstellen
+2. URL: `https://www.meinereitwelt.de/paypalcheckout/webhooks`
+3. Event-Typen:
+   - `PAYMENT.CAPTURE.COMPLETED`
+   - `PAYMENT.CAPTURE.DENIED`
+   - `PAYMENT.CAPTURE.REFUNDED`
+   - `PAYMENT.CAPTURE.REVERSED`
+   - `CHECKOUT.ORDER.APPROVED`
+
+---
+
+## Module-Struktur
+
 ```
-# Debugging
+PayPal/CommercePlatform/
+├── Block/
+│   └── Info.php                          # Admin Zahlungs-Info
+├── Controller/
+│   ├── Order/Index.php                   # AJAX Bestellung erstellen
+│   ├── Token/Index.php                   # Client-Token für ACDC
+│   └── Webhooks/Index.php               # Webhook Handler
+├── Logger/
+│   └── Handler.php                       # Debug Logger
+├── Model/
+│   ├── Config.php                        # Modul-Konfiguration
+│   ├── Config/Source/ButtonOptions.php   # Button-Stil Optionen
+│   ├── PayPalCPConfigProvider.php        # Checkout JS Config
+│   ├── Payment/
+│   │   ├── Advanced/Payment.php          # ACDC Zahlungsmethode
+│   │   └── SPB/Payment.php              # Smart Payment Buttons
+│   └── Paypal/
+│       ├── Api.php                       # PayPal API Wrapper
+│       ├── Core/
+│       │   ├── AccessTokenRequest.php    # OAuth Token
+│       │   ├── GenerateTokenRequest.php  # Client Token
+│       │   └── Token.php                # Token Orchestrator
+│       ├── Order/Request.php            # Bestellung an PayPal
+│       └── Webhooks/
+│           ├── Event.php                # Webhook Events
+│           └── VerifyWebhookSignatureRequest.php
+├── etc/
+│   ├── module.xml                       # Modul-Registrierung
+│   ├── config.xml                       # Default-Konfiguration
+│   ├── payment.xml                      # Zahlungsmethoden
+│   ├── csp_whitelist.xml               # CSP Whitelist
+│   ├── adminhtml/system.xml            # Backend-Konfiguration
+│   └── frontend/
+│       ├── di.xml                       # ConfigProvider
+│       └── routes.xml                   # Route: paypalcheckout
+├── view/
+│   ├── adminhtml/templates/info/default.phtml
+│   └── frontend/
+│       ├── layout/checkout_index_index.xml
+│       ├── templates/
+│       │   ├── info/default.phtml
+│       │   └── success.phtml
+│       ├── requirejs-config.js
+│       ├── web/
+│       │   ├── css/paypalcp.css
+│       │   ├── images/ (visa, mastercard, amex SVGs)
+│       │   ├── js/view/payment/
+│       │   │   ├── paypal_spb.js
+│       │   │   ├── paypal_advanced.js
+│       │   │   ├── paypal_sdk-adapter.js
+│       │   │   └── paypal_token-adapter.js
+│       │   ├── js/view/payment/method-renderer/
+│       │   │   ├── paypal_spb-method.js
+│       │   │   └── paypaladvanced-method.js
+│       │   └── template/payment/
+│       │       ├── paypal-standard.html
+│       │       ├── paypal_spb.html
+│       │       └── paypaladvanced-form.html
+│       └── ...
+├── registration.php
+└── composer.json
+```
 
-- The module has a configuration "Debug Mode" which logs everything going out to PAYPAL APIs, error responses and details
+---
+
+## Security
+
+- ✅ **Kein Client-Secret im Frontend** — authorizationBasic komplett entfernt
+- ✅ **Client-Token** wird serverseitig generiert, nur temporär gültig
+- ✅ **CSRF-Schutz** — Webhook nutzt CsrfAwareActionInterface (kein fehlerhaftes Skip-Plugin)
+- ✅ **CSP-Whitelist** — Nur PayPal-Domains erlaubt
+
+---
+
+## Kompatibilität
+
+| Voraussetzung | Version |
+|---------------|---------|
+| Magento | 2.2.x |
+| PHP | 7.0+ |
+| paypal/paypal-checkout-sdk | ^1.0 (PHP 5.3+) |
+
+---
+
+## ⚠️ Bekannte Einschränkungen
+
+- Kein Vault (Karten speichern) — absichtlich entfernt
+- Kein FraudNet — absichtlich entfernt (PayPal hat eigene Betrugserkennung)
+- Keine Ratenzahlung — in DE nicht unterstützt
+- Kein Billing Agreement / Tokenized Payments
+- Nach `setup:static-content:deploy de_DE` muss ggf. das PayPal set-payment-method.js Override manuell kopiert werden (falls das alte PayPal Express Theme-Override noch aktiv ist — siehe PayPal-Fix Dokumentation)
+
+---
+
+## Lizenz
+
+Basierend auf QBO Module (Apache 2.0 Lizenz). Siehe LICENSE.txt.
