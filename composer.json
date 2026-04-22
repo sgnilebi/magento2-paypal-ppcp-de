@@ -4,14 +4,16 @@
     "type": "magento2-module",
     "license": "OSL-3.0",
     "require": {
-        "paypal/paypal-checkout-sdk": "^1.0"
+        "ext-curl": "*"
     },
     "autoload": {
         "files": [
             "registration.php"
         ],
         "psr-4": {
-            "PayPal\\CommercePlatform\\": ""
+            "PayPal\\CommercePlatform\\": "",
+            "PayPalCheckoutSdk\\": "lib/PayPalCheckoutSdk/",
+            "PayPalHttp\\": "lib/PayPalHttp/"
         }
     },
     "minimum-stability": "dev",
