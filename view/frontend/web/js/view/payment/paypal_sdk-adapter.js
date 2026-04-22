@@ -20,7 +20,7 @@ define([
 
                 var clientToken = null;
                 if (self.isAcdcEnable) {
-                    clientToken = paypalTokenAdapter.generateClientToken();
+                    clientToken = paypalTokenAdapter.generateClientTokenSync();
                 }
 
                 var objCallback = {

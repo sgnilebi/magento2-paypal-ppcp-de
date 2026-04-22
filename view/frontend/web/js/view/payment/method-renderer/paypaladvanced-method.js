@@ -131,7 +131,7 @@ define(
                         });
                     },
                     onApprove: function (data) {
-                        self.orderId = data.id;
+                        self.orderId = data.orderID;
                         self.placeOrder();
                     },
                     onError: function (err) {

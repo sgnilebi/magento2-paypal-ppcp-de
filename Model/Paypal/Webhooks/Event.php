@@ -154,7 +154,8 @@ class Event
             self::PAYMENT_CAPTURE_PENDING,
             self::PAYMENT_CAPTURE_REFUNDED,
             self::PAYMENT_CAPTURE_REVERSED,
-            self::PAYMENT_CAPTURE_DENIED
+            self::PAYMENT_CAPTURE_DENIED,
+            self::CHECKOUT_ORDER_APPROVED
         ];
     }
 

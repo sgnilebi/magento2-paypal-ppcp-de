@@ -124,6 +124,17 @@ class Request
         }
         $requestBody = $this->buildRequestBody();
 
+        // PSD2 / 3D Secure: SCA_WHEN_REQUIRED triggers 3DS when mandated by EU regulation
+        $requestBody['payment_source'] = [
+            'card' => [
+                'attributes' => [
+                    'verification' => [
+                        'method' => 'SCA_WHEN_REQUIRED'
+                    ]
+                ]
+            ]
+        ];
+
         if ($paypalCMID) {
             $this->_orderCreateRequest->headers[self::PAYPAL_CLIENT_METADATA_ID_HEADER] = $paypalCMID;
         }
@@ -162,6 +173,9 @@ class Request
         $requestBody = [
             'intent' => 'CAPTURE',
             'application_context' => [
+                'brand_name' => $this->_storeManager->getStore()->getFrontendName() ?: $this->_storeManager->getStore()->getName(),
+                'return_url' => $this->_storeManager->getStore()->getUrl('checkout/cart'),
+                'cancel_url' => $this->_storeManager->getStore()->getUrl('checkout/cart'),
                 'shipping_preference' => $this->_quote->isVirtual() ? 'NO_SHIPPING' : 'SET_PROVIDED_ADDRESS'
             ],
             'payer' => $this->_getPayer(),
