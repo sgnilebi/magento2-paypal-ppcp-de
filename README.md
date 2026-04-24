@@ -1,86 +1,198 @@
-# PayPal PPCP für Magento 2.2.3 (DE/EUR)
+# PayPal PPCP (Complete Payments Platform) für Magento 2.2.3
 
-PayPal Commerce Platform (PPCP) Modul für Magento 2.2.3, angepasst für den deutschen Markt.
+**DE/EUR-Anpassung** des QBO Mexico PayPal Commerce Platform Moduls für meinereitwelt.de
 
-Basiert auf [qbo-tech/magento2-paypal-commerce-platform](https://github.com/qbo-tech/magento2-paypal-commerce-platform) (OSL-3.0), adaptiert von Mexiko/MXN nach Deutschland/EUR.
+## Status (24.04.2026)
 
-## Zahlungsmethoden
-
-| Methode | SDK-Parameter | Beschreibung |
-|---------|---------------|--------------|
-| PayPal | (default) | PayPal Smart Payment Buttons |
-| Kreditkarte (ACDC) | `hosted-fields` | Kreditkartenfelder direkt im Checkout |
-| SEPA-Lastschrift | `enable-funding=sepa` | Lastschrift für DE-Kunden |
-| Pay Later | `enable-funding=paylater` | "Später bezahlen" (30d), "In 3 Raten" (ab 30€), Ratenzahlung (ab 199€) |
-| Pay Later Messages | `components=messages` | Informations-Widget beim Checkout |
-| Apple Pay | `enable-funding=applepay` | PayPal übernimmt Apple Merchant ID — nur Domain-Verifizierung im PayPal Dashboard nötig |
-
-## Voraussetzungen
-
-- Magento 2.2.3+
-- PHP 7.0+ (getestet mit 7.0.33)
-- PayPal Business Account mit PPCP freigeschaltet
-- **Kein Composer nötig** — SDK ist eingebettet (siehe unten)
+- ✅ Modul aktiv, Live-Modus (sandbox_flag=0)
+- ✅ PayPal Popup öffnet sich (Live)
+- ✅ Funding-Eligibility: PAYPAL, CARD, SEPA, PAYLATER, TRUSTLY
+- ⚠️ Layout-Probleme offen (siehe LAYOUT-ISSUES.md)
 
 ## Installation
 
-Siehe [PPCP_DEPLOY_RUNBOOK.md](../../magento_import/PPCP_DEPLOY_RUNBOOK.md) für vollständige Deployment-Anleitung.
-
-Kurzform:
 ```bash
-# 1. Modul-Dateien kopieren
-cp -r app/code/PayPal/CommercePlatform/ /var/www/meinereitwelt/app/code/PayPal/
+# 1. Modul in app/code/PayPal/CommercePlatform/ kopieren
+# 2. Module aktivieren
+php bin/magento module:enable PayPal_CommercePlatform
+php bin/magento setup:upgrade
 
-# 2. Modul aktivieren
-sudo -u www-data php bin/magento module:enable PayPal_CommercePlatform
-sudo -u www-data php bin/magento setup:upgrade
+# 3. DI kompilieren (ALS www-data!)
 sudo -u www-data php bin/magento setup:di:compile
-sudo -u www-data php bin/magento setup:static-content:deploy de_DE
-sudo -u www-data php bin/magento cache:clean
 
-# 3. Im Backend konfigurieren
-# Stores → Configuration → Payment → PayPal Checkout
+# 4. Static Content deployen
+sudo -u www-data php bin/magento setup:static-content:deploy de_DE
+
+# 5. PPCP-Dateien manuell kopieren (ÜBERSCHREIBT deploy!)
+cp -r app/code/PayPal/CommercePlatform/view/frontend/web/js/ \
+      pub/static/frontend/TemplateMonster/theme762/de_DE/PayPal_CommercePlatform/js/
+cp -r app/code/PayPal/CommercePlatform/view/frontend/web/template/ \
+      pub/static/frontend/TemplateMonster/theme762/de_DE/PayPal_CommercePlatform/template/
+cp app/code/PayPal/CommercePlatform/view/frontend/web/css/paypalcp.css \
+   pub/static/frontend/TemplateMonster/theme762/de_DE/PayPal_CommercePlatform/css/
+chown -R www-data:www-data pub/static/frontend/TemplateMonster/theme762/de_DE/PayPal_CommercePlatform/
+
+# 6. AGB-Fix JS kopieren
+mkdir -p pub/static/frontend/TemplateMonster/theme762/de_DE/Magento_Paypal/js/action/
+cp app/design/frontend/TemplateMonster/theme762/Magento_Paypal/web/js/action/set-payment-method.js \
+   pub/static/frontend/TemplateMonster/theme762/de_DE/Magento_Paypal/js/action/
+chown -R www-data:www-data pub/static/frontend/TemplateMonster/theme762/de_DE/Magento_Paypal/
+
+# 7. Cache leeren (ALS www-data!)
+sudo -u www-data php bin/magento cache:clean
 ```
 
-## SDK-Bundling
+## KRITISCHE FIXES (ohne diese funktioniert nichts!)
 
-Das PayPal Checkout SDK (`paypal/paypal-checkout-sdk`) wird nicht über Composer installiert, da der Server Composer 1.5.2 hat (zu alt für packagist.org). Stattdessen sind die SDK-Klassen eingebettet in:
+### 1. ProductionEnvironment.php — API-Endpoint
 
-- `lib/PayPalCheckoutSdk/` — Fork von `qbo-tech/paypal-checkout-sdk:1.0.2` (Apache 2.0)
-- `lib/PayPalHttp/` — Fork von `qbo-tech/paypalhttp:1.0.1` (MIT)
+**Problem:** Standardmäßig steht `https://api.paypal.com`, aber PPCP benötigt `https://api-m.paypal.com`
+**Symptom:** `invalid_client` Fehler bei Live-API-Calls
 
-Namespaces sind identisch mit dem Original-SDK (`PayPalCheckoutSdk\*`, `PayPalHttp\*`).
+```php
+// lib/lib/PayPalCheckoutSdk/Core/ProductionEnvironment.php
+// ZEILE ÄNDERN:
+return "https://api-m.paypal.com";  // war: "https://api.paypal.com"
+```
 
-Siehe `lib/NOTICE.md` für Attribution.
+### 2. Config.php — EncryptorInterface für Credential-Decryption
 
-## Bugfixes gegenüber dem QBO-Original
+**Problem:** Magento 2.2.3 `backend_model="Encrypted"` speichert Werte mit `0:2:` Prefix. Ohne Encryption können die Credentials nicht gelesen werden.
+**Symptom:** PayPal-Buttons erscheinen nicht (hasCredentials = false)
 
-| # | Fix | Issue |
-|---|-----|-------|
-| 1 | `data.id` → `data.orderID` (HostedFields) | PayPal SDK v5 Rückgabe-Format |
-| 2 | `CHECKOUT.ORDER.APPROVED` Webhook-Event | Wurde ignoriert |
-| 3 | `async: false` → Promise + sync Fallback | Browser-Thread wurde blockiert |
-| 4 | SCA_WHEN_REQUIRED für EU PSD2 | 3D Secure fehlte |
-| 5 | brand_name, return_url, cancel_url | PayPal-Popup UX fehlte |
-| 6 | Template-Restrukturierung (#21) | PayPal + Karte als separate payment-method Divs |
-| 7 | validateGrandTotal() (#18) | Warenkorb-Änderung → Betragsabweichung |
-| 8 | SDK enable-funding/disable-funding dynamisch | SEPA, Pay Later, Apple Pay |
-| 9 | Backend-Konfiguration Funding Sources | Neue Felder in system.xml |
-| 10 | Credentials-Fehlerbehandlung (#14/#15) | Freundliche Meldung wenn Client ID/Secret fehlen |
+```php
+// Model/Config.php — Constructor:
+protected $_encryptor;
+public function __construct(..., EncryptorInterface $encryptor) {
+    $this->_encryptor = $encryptor;
+}
 
-## Entfernte Features (nicht für DE)
+// Methoden hinzufügen:
+protected function _decryptIfNeeded($value) {
+    if (empty($value)) return $value;
+    if (strpos($value, ':') !== false && preg_match('/^\d+:\d+:/', $value)) {
+        try { return $this->_encryptor->decrypt($value); }
+        catch (\Exception $e) { return $value; }
+    }
+    return $value;
+}
 
-- Oxxo (nur MX)
-- Installments / MSI (nur MX)
-- Billing Agreement / Reference Transactions
-- Vault (Karten speichern)
-- FraudNet Integration
-- `authorizationBasic` im Frontend (Sicherheitsrisiko)
+public function getClientId() { return $this->_decryptIfNeeded($this->getConfigValue(self::CONFIG_XML_CLIENT_ID)); }
+public function getSecretId() { return $this->_decryptIfNeeded($this->getConfigValue(self::CONFIG_XML_SECRET_ID)); }
+public function getWebhookId() { return $this->_decryptIfNeeded($this->getConfigValue(self::CONFIG_XML_WEBHOOK_ID)); }
+```
 
-## Lizenz
+### 3. WebhookCsrfBypass — CSRF-Bypass für Webhooks
 
-OSL-3.0 (wie das QBO-Original)
+**Problem:** Magento 2.2.3 hat kein `CsrfAwareActionInterface` (erst ab 2.3). Webhooks werden mit CSRF-Fehler abgewiesen.
 
-Eingebettete Bibliotheken:
-- PayPal Checkout SDK: Apache 2.0
-- PayPal HTTP: MIT
+**Lösung:** Plugin auf `CsrfValidator::aroundValidate()` das Webhook-Requests exempted.
+- Siehe `Plugin/WebhookCsrfBypass.php`
+- Registriert in `etc/frontend/di.xml`
+
+### 4. paypal_sdk-adapter.js — KEIN data-namespace
+
+**Problem:** `data-namespace="paypal_sdk"` bewirkt dass der SDK als `window.paypal_sdk` statt `window.paypal` registriert wird.
+**Symptom:** `typeof paypal === 'undefined'` im Checkout
+
+```javascript
+// NICHT: script.setAttribute('data-namespace', 'paypal_sdk');
+// KEIN data-namespace Attribute!
+```
+
+### 5. paypal_spb-method.js — paypalMethod und Button-Rendering
+
+- `paypalMethod: 'paypalcp'` — MUSS mit ConfigProvider-Code übereinstimmen
+- `getCode: function () { return this.paypalMethod; }` — ohne Parameter!
+- `completeRender()` MUSS `loadSdk()` aufrufen
+- Funding-Quellen: PAYPAL, SEPA, PAYLATER, TRUSTLY, APPLE_PAY
+
+### 6. paypal-standard.html — Template
+
+- Radio value='paypalcp' (NICHT 'paypalspb_paypal')
+- Container-IDs: paypal-button-container, paypal-paylater-container, paypal-sepa-container, paypal-trustly-container
+- `afterRender: completeRender()` — löst SDK-Load und Button-Rendering aus
+
+## Backend-Konfiguration
+
+- **Pfad:** Stores → Configuration → Sales → Payment Methods → PayPal CommercePlatform
+- **WICHTIG:** IMMER "All Store Views" wählen, NICHT "Default Store View"
+- **Aktiv:** Ja
+- **Sandbox Mode:** Nein (Live)
+- **Client ID / Secret / Webhook ID:** Verschlüsselt gespeichert (0:2: Prefix)
+- **SEPA:** Ja
+- **Pay Later:** Ja
+- **Apple Pay:** Ja (Domain-Verifikation ausstehend)
+- **Messages:** Ja
+- **ACDC:** Nein
+
+## PayPal Dashboard
+
+- **App-Name:** NVP SOAP Webhooks (trotz des Namens REST API fähig!)
+- **Client ID:** AfDfQIQwnz_Eb-56UeC8wJjV875vMeg7EIhzA9EYzP7EnNKpw_2awjz7hR5tpoqxUHkuZU1rz-EtLggd
+- **Features:** ACDC, Apple Pay, Subscriptions, Vault, Messages
+- **Webhook URL:** https://www.meinereitwelt.de/paypalcheckout/webhooks
+- **Webhook ID:** 6YC568539A139993C
+- **Webhook Events:** Checkout order approved/completed/voided, Payment capture declined/denied/refunded/pending/completed
+
+## Funding Eligibility (DE, EUR)
+
+| Funding Source | Eligible | Button-Typ |
+|---------------|----------|------------|
+| PAYPAL | ✅ | Gold, label='paypal' |
+| PAYLATER | ✅ | Schwarz, label='paylater' (Ratenzahlung) |
+| SEPA | ✅ | Weiß, label='pay' (SEPA Lastschrift) |
+| CARD | ✅ | Im PayPal-Popup |
+| TRUSTLY | ✅ | Schwarz, label='pay' (Banküberweisung) |
+| CREDIT | ❌ | Nicht in DE |
+| APPLE_PAY | ❌ | Domain-Verifikation ausstehend |
+
+## WICHTIGE REGELN
+
+1. **NIEMALS** `php bin/magento` als root! Immer als `www-data`
+2. **NIEMALS** `rm -rf var/cache/*` — nur `sudo -u www-data php bin/magento cache:clean`
+3. **deployed_version.txt** MUSS `1777036944` bleiben — NIEMALS ändern!
+4. Nach `composer update`: ProductionEnvironment.php-Fix + WebhookCsrfBypass-Plugin + Config.php-Decryption
+5. Nach `setup:static-content:deploy`: PPCP-Dateien manuell kopieren + AGB-Fix JS
+6. Nach `setup:di:compile`: `chown -R www-data:www-data generated/`
+7. Backend-Konfiguration IMMER in "All Store Views"
+
+## Dateien auf dem Server
+
+```
+app/code/PayPal/CommercePlatform/
+├── Controller/
+│   ├── Order/Index.php          — createOrder API-Call
+│   ├── Token/Index.php           — Client Token für ACDC
+│   └── Webhook/Index.php        — Webhook-Handler (CSRF-Bypass)
+├── Model/
+│   ├── Config.php               ★ _decryptIfNeeded() Fix
+│   ├── PayPalCPConfigProvider.php ★ enable-funding: sepa,paylater,trustly,applepay
+│   ├── Paypal/
+│   │   ├── Api.php              ★ ProductionEnvironment mit api-m.paypal.com
+│   │   └── Core/                — AccessToken, GenerateToken
+├── Plugin/
+│   └── WebhookCsrfBypass.php    ★ CSRF-Bypass für Webhooks
+├── etc/
+│   ├── config.xml               — Standard-Konfiguration
+│   ├── module.xml               — Modul-Registrierung
+│   ├── frontend/di.xml          ★ CSRF-Bypass Plugin-Registrierung
+│   └── adminhtml/system.xml     — Backend-Konfiguration
+├── view/frontend/
+│   ├── layout/checkout_index_index.xml  — paypalcp Renderer
+│   ├── web/
+│   │   ├── css/paypalcp.css     ★ Button-Styling
+│   │   ├── js/view/payment/
+│   │   │   ├── paypal_spb.js     — Renderer-Registrierung (type: 'paypalcp')
+│   │   │   ├── paypal_sdk-adapter.js ★ KEIN data-namespace
+│   │   │   └── paypal_token-adapter.js
+│   │   └── js/view/payment/method-renderer/
+│   │       └── paypal_spb-method.js ★ Button-Rendering, funding sources
+│   └── template/payment/
+│       └── paypal-standard.html  ★ Radio 'paypalcp', Container-IDs
+└── lib/lib/PayPalCheckoutSdk/
+    └── Core/
+        └── ProductionEnvironment.php  ★ api-m.paypal.com Fix
+```
+
+★ = Modifizierte Dateien (abweichend vom QBO-Original)

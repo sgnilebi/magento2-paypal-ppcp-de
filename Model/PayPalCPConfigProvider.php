@@ -144,6 +144,7 @@ class PayPalCPConfigProvider implements \Magento\Checkout\Model\ConfigProviderIn
         if ($this->_paypalConfig->isEnableApplePay()) {
             $enableFunding[] = 'applepay';
         }
+        $enableFunding[] = "trustly";
         if (!empty($enableFunding)) {
             $this->_params[self::SDK_CONFIG_ENABLE_FUNDING] = implode(',', $enableFunding);
         }

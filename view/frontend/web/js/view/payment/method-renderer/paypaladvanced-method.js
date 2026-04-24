@@ -27,6 +27,9 @@ define(
             selectedMethod: null,
             isFormValid: ko.observable(false),
             grandTotal: ko.observable(window.checkoutConfig.payment.paypalcp.grandTotal),
+            sdkLoaded: false,
+            paypalRendered: false,
+            cardRendered: false,
 
             getCode: function (method) {
                 return method;
@@ -68,6 +71,11 @@ define(
                 data.method = this.paypalMethod;
                 selectPaymentMethodAction(data);
                 checkoutData.setSelectedPaymentMethod(this.item.method);
+
+                // Re-render buttons when payment method becomes visible
+                setTimeout(function() {
+                    self.renderVisibleButtons();
+                }, 300);
             },
 
             /**
@@ -80,7 +88,6 @@ define(
                     var previousGrandTotal = parseFloat(self.grandTotal());
 
                     if (previousGrandTotal !== currentGrandTotal) {
-                        self.logger('ACDC: Grand total changed: ' + previousGrandTotal + ' → ' + currentGrandTotal);
                         self.grandTotal(currentGrandTotal);
                     }
                     resolve();
@@ -94,11 +101,17 @@ define(
                     return;
                 }
 
+                if (this.cardRendered) {
+                    return;
+                }
+
                 if (!paypal.HostedFields.isEligible()) {
                     self.logger('HostedFields not eligible');
                     self.isVisibleCard(false);
                     return;
                 }
+
+                this.cardRendered = true;
 
                 paypal.HostedFields.render({
                     styles: {
@@ -256,6 +269,10 @@ define(
 
                 if (typeof paypal === 'undefined') {
                     $('#paypal-button-container').html($t('PayPal ist derzeit nicht verfügbar.'));
+                    return;
+                }
+
+                if (this.paypalRendered) {
                     return;
                 }
 
@@ -444,37 +461,41 @@ define(
                 }
             },
 
+            /**
+             * Re-render PayPal buttons when payment section becomes visible.
+             * Called after selecting PayPal method (accordion opens).
+             */
+            renderVisibleButtons: function () {
+                var self = this;
+                if (typeof paypal !== 'undefined' && self.paypalRendered) {
+                    // Force PayPal to recalculate button sizes in now-visible container
+                    try {
+                        paypal.Buttons().close().then(function() {
+                            self.paypalRendered = false;
+                            self.renderSmartButton();
+                        });
+                    } catch(e) {
+                        // If close() not available, just force a re-render
+                        self.paypalRendered = false;
+                        $('#paypal-button-container').empty();
+                        self.renderSmartButton();
+                    }
+                }
+            },
+
             rendersPayments: function () {
                 var self = this;
-                self.renderHostedFields();
+                if (!self.sdkLoaded) {
+                    return;
+                }
                 self.renderSmartButton();
+                self.renderHostedFields();
             },
 
             completeRender: function () {
                 var self = this;
-
-                if (!self.isAcdcEnable) {
-                    return false;
-                }
-
-                var body = $('body').loader();
-                body.loader('show');
-                self.initializeEvents();
-                body.loader('hide');
-            },
-
-            initializeEvents: function () {
-                var self = this;
                 self.isVisibleCard(true);
                 $('#paypalcheckout').show();
-
-                // Auto-select card method when card radio is clicked
-                var self = this;
-                $('#acdc_card .payment-method-title input[type=radio]').on('change', function () {
-                    if (this.checked) {
-                        self.loadSdk();
-                    }
-                });
 
                 self.loadSdk();
             },
@@ -482,18 +503,26 @@ define(
             loadSdk: function () {
                 var self = this;
 
-                if (typeof paypal === 'undefined') {
-                    var body = $('body').loader();
-                    body.loader('show');
-
-                    paypalSdkAdapter.loadSdk(function () {
-                        self.rendersPayments();
-                        $('#card-form button#submit').attr('disabled', true);
-                        body.loader('hide');
-                    });
-                } else {
+                if (self.sdkLoaded) {
                     self.rendersPayments();
+                    return;
                 }
+
+                if (typeof paypal !== 'undefined') {
+                    self.sdkLoaded = true;
+                    self.rendersPayments();
+                    return;
+                }
+
+                var body = $('body').loader();
+                body.loader('show');
+
+                paypalSdkAdapter.loadSdk(function () {
+                    self.sdkLoaded = true;
+                    self.rendersPayments();
+                    $('#card-form button#submit').attr('disabled', true);
+                    body.loader('hide');
+                });
             },
 
             enableCheckout: function () {

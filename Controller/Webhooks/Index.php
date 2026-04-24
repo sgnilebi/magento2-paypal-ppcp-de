@@ -3,7 +3,7 @@
 namespace PayPal\CommercePlatform\Controller\Webhooks;
 
 
-class Index extends \Magento\Framework\App\Action\Action  implements \Magento\Framework\App\CsrfAwareActionInterface
+class Index extends \Magento\Framework\App\Action\Action
 {
 
     const HEADER_PAYPAL_AUTH_ALGO         = 'Paypal-Auth-Algo';
@@ -33,7 +33,11 @@ class Index extends \Magento\Framework\App\Action\Action  implements \Magento\Fr
      * Class constructor
      *
      * @param \Magento\Framework\App\Action\Context $context
-     * @param \Magento\Framework\Filesystem\DriverInterface $driver
+     * @param \Magento\Framework\Filesystem\Driver\File $driver
+     * @param \PayPal\CommercePlatform\Model\Config $paypalConfig
+     * @param \PayPal\CommercePlatform\Model\Paypal\Api $paypalApi
+     * @param \PayPal\CommercePlatform\Model\Paypal\Webhooks\VerifyWebhookSignatureRequest $verifyWebhookSignature
+     * @param \PayPal\CommercePlatform\Model\Paypal\Webhooks\Event $webhookEvent
      * @param \PayPal\CommercePlatform\Logger\Handler $logger
      */
     public function __construct(
@@ -79,18 +83,8 @@ class Index extends \Magento\Framework\App\Action\Action  implements \Magento\Fr
             $this->_webhookEvent->processWebhook($eventData);
         } catch (\Exception $e) {
             $this->_logger->error($e);
-            $this->getResponse()->setStatusHeader(503, '1.1', 'Service Unavailable')->sendResponse();
+            $this->_getResponse()->setStatusHeader(503, '1.1', 'Service Unavailable')->sendResponse();
         }
-    }
-
-    public function createCsrfValidationException(\Magento\Framework\App\RequestInterface $request)
-    {
-        return null;
-    }
-
-    public function validateForCsrf(\Magento\Framework\App\RequestInterface $request)
-    {
-        return true;
     }
 
     public function isValidWebhookSignature($eventData)

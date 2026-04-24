@@ -1,25 +1,20 @@
 define([
-    'Magento_Checkout/js/view/payment/default',
-    'mage/storage',
     'jquery',
-    'paypalTokenAdapter',
-    'Magento_Customer/js/customer-data'
-], function (Component, storage, $, paypalTokenAdapter, customerData) {
+    'paypalTokenAdapter'
+], function ($, paypalTokenAdapter) {
     'use strict';
     return {
         componentName: "paypalSdkComponent",
         paypalSdk: window.checkoutConfig.payment.paypalcp.urlSdk,
-        onLoadedCallback: '',
         isAcdcEnable: window.checkoutConfig.payment.paypalcp.acdc.enable,
         hasCredentials: window.checkoutConfig.payment.paypalcp.hasCredentials,
 
         loadSdk: function (callbackOnLoaded) {
             var self = this;
-            self.onLoadedCallback = callbackOnLoaded;
 
             // Check if credentials are configured
             if (!self.hasCredentials || !self.paypalSdk) {
-                console.error('[PayPal PPCP] Credentials not configured. Please enter Client ID and Secret in backend.');
+                console.error('[PayPal PPCP] No credentials or SDK URL.');
                 var containers = [
                     document.getElementById('paypal-button-container'),
                     document.getElementById('card-button-container'),
@@ -29,62 +24,46 @@ define([
                 ];
                 containers.forEach(function(container) {
                     if (container) {
-                        container.innerHTML = '<div style="padding:15px;color:#e02b27;font-size:14px;">PayPal ist nicht konfiguriert. Bitte kontaktieren Sie den Shop-Betreiber.</div>';
+                        container.innerHTML = '<div style="padding:15px;color:#e02b27;font-size:14px;">PayPal ist nicht konfiguriert.</div>';
                     }
                 });
                 return;
             }
 
-            if (typeof paypal === 'undefined') {
+            // Already loaded?
+            if (typeof paypal !== 'undefined') {
+                callbackOnLoaded();
+                return;
+            }
 
-                var clientToken = null;
-                if (self.isAcdcEnable) {
-                    clientToken = paypalTokenAdapter.generateClientTokenSync();
-                }
-
-                var objCallback = {
-                    completeCallback: function (resultIndicator, successIndicator) {
-                        self.logger('completeCallback complete');
-                    },
-                    errorCallback: function () {
-                        self.logger('Payment errorCallback');
-                    },
-                    cancelCallback: function () {
-                        self.logger('Payment cancelled');
-                    },
-                    onLoadedCallback: function () {
-                        self.logger('PayPal SDK loaded', paypal);
-                        $(document).ready(function () {
-                            return callbackOnLoaded.call();
-                        });
-                        self.logger('Load paypal Component');
-                    }
-                };
-
-                window.ErrorCallback = $.proxy(objCallback, "errorCallback");
-                window.CancelCallback = $.proxy(objCallback, "cancelCallback");
-                window.CompletedCallback = $.proxy(objCallback, "completeCallback");
-
-                // IMPORTANT: data-client-token must be set on the script element
-                // Attributes are set BEFORE the script executes (async download happens first)
-                requirejs.load({
-                    contextName: '_',
-                    onScriptLoad: $.proxy(objCallback, "onLoadedCallback"),
-                    config: {
-                        baseUrl: self.paypalSdk
-                    }
-                }, self.componentName, self.paypalSdk);
-
-                var htmlElement = $('[data-requiremodule="' + self.componentName + '"]')[0];
-
-                htmlElement.setAttribute('data-error', 'window.ErrorCallback');
-                htmlElement.setAttribute('data-cancel', 'window.ErrorCallback');
-                htmlElement.setAttribute('data-complete', 'window.CompletedCallback');
-
-                if (clientToken && self.isAcdcEnable) {
-                    htmlElement.setAttribute('data-client-token', clientToken);
+            // Get client token for ACDC if needed
+            var sdkUrl = self.paypalSdk;
+            if (self.isAcdcEnable) {
+                var clientToken = paypalTokenAdapter.generateClientTokenSync();
+                if (clientToken) {
+                    sdkUrl += '&data-client-token=' + encodeURIComponent(clientToken);
                 }
             }
+
+            // Load PayPal SDK via standard <script> tag — much more reliable than requirejs.load()
+            var script = document.createElement('script');
+            script.src = sdkUrl;
+            
+
+            script.onload = function () {
+                console.log('[PayPal PPCP] SDK loaded successfully');
+                callbackOnLoaded();
+            };
+
+            script.onerror = function () {
+                console.error('[PayPal PPCP] SDK failed to load');
+                var container = document.getElementById('paypal-button-container');
+                if (container) {
+                    container.innerHTML = '<div style="padding:15px;color:#e02b27;font-size:14px;">PayPal SDK konnte nicht geladen werden. Bitte versuchen Sie es später erneut.</div>';
+                }
+            };
+
+            document.head.appendChild(script);
         },
 
         logger: function (message, obj) {

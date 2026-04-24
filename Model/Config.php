@@ -3,11 +3,13 @@
  * PayPal PPCP Config for Magento 2.2.3
  * Based on QBO PayPal Commerce Platform — adapted for DE/EUR
  * Added: Funding source options (SEPA, Pay Later, Apple Pay, Messages)
+ * FIX: Added EncryptorInterface to decrypt client_id, secret_id, webhook_id
  */
 namespace PayPal\CommercePlatform\Model;
 
 use Magento\Framework\Locale\ResolverInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 
 class Config
 {
@@ -63,16 +65,23 @@ class Config
      */
     private $storeManager;
 
+    /**
+     * @var \Magento\Framework\Encryption\EncryptorInterface
+     */
+    protected $_encryptor;
+
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Psr\Log\LoggerInterface $logger,
         StoreManagerInterface $storeManager,
-        ResolverInterface $resolverInterface
+        ResolverInterface $resolverInterface,
+        EncryptorInterface $encryptor
     ) {
         $this->_scopeConfig = $scopeConfig;
         $this->_logger      = $logger;
         $this->resolverInterface = $resolverInterface;
         $this->storeManager = $storeManager;
+        $this->_encryptor   = $encryptor;
     }
 
     public function isMethodActive($method)
@@ -111,17 +120,41 @@ class Config
 
     public function getClientId()
     {
-        return $this->getConfigValue(self::CONFIG_XML_CLIENT_ID);
+        $value = $this->getConfigValue(self::CONFIG_XML_CLIENT_ID);
+        return $this->_decryptIfNeeded($value);
     }
 
     public function getSecretId()
     {
-        return $this->getConfigValue(self::CONFIG_XML_SECRET_ID);
+        $value = $this->getConfigValue(self::CONFIG_XML_SECRET_ID);
+        return $this->_decryptIfNeeded($value);
     }
 
     public function getWebhookId()
     {
-        return $this->getConfigValue(self::CONFIG_XML_WEBHOOK_ID);
+        $value = $this->getConfigValue(self::CONFIG_XML_WEBHOOK_ID);
+        return $this->_decryptIfNeeded($value);
+    }
+
+    /**
+     * Decrypt value if it was encrypted by Magento backend_model="Encrypted"
+     * Encrypted values start with a prefix like "0:2:..."
+     */
+    protected function _decryptIfNeeded($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        // If value looks encrypted (contains ":" separator from Magento encryption), decrypt it
+        if (strpos($value, ':') !== false && preg_match('/^\d+:\d+:/', $value)) {
+            try {
+                return $this->_encryptor->decrypt($value);
+            } catch (\Exception $e) {
+                $this->_logger->warning('PayPal PPCP: Failed to decrypt config value: ' . $e->getMessage());
+                return $value;
+            }
+        }
+        return $value;
     }
 
     public function getCurrency()

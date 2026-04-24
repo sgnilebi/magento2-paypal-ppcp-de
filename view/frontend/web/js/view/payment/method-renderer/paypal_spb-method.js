@@ -27,7 +27,7 @@ define(
                 template: window.checkoutConfig.payment.paypalcp.template
             },
 
-            paypalMethod: 'paypalspb',
+            paypalMethod: 'paypalcp',
             orderId: null,
             currentMethod: null,
             selectedMethod: null,
@@ -42,75 +42,35 @@ define(
                 var self = this;
 
                 quote.totals.subscribe(function (totals) {
-                    if (!totals || !totals.base_grand_total) {
-                        return;
+                    if (!totals || !totals.base_grand_total) { return; }
+                    var current = parseFloat(totals.base_grand_total);
+                    var previous = parseFloat(self.grandTotal());
+                    if (previous !== current) {
+                        self.grandTotal(current);
+                        var containers = ['paypal-button-container', 'paypal-paylater-container', 'paypal-sepa-container', 'paypal-trustly-container'];
+                        containers.forEach(function(id) {
+                            var el = document.getElementById(id);
+                            if (el) { el.innerHTML = ''; }
+                        });
+                        self.renderButtons();
                     }
-                    var currentGrandTotal = parseFloat(totals.base_grand_total);
-                    var previousGrandTotal = parseFloat(self.grandTotal());
-
-                    if (previousGrandTotal !== currentGrandTotal) {
-                        var container = document.getElementById('paypal-button-container');
-                        if (container) {
-                            container.innerHTML = '';
-                        }
-                        var cardContainer = document.getElementById('card-button-container');
-                        if (cardContainer) {
-                            cardContainer.innerHTML = '';
-                        }
-                        if (cardContainer || container) {
-                            self.renderButtons();
-                        }
-                    }
-                    self.grandTotal(currentGrandTotal);
                 });
 
                 return this;
             },
 
-            /**
-             * Validate that the grand total hasn't changed since the PayPal order was created.
-             * Called before placeOrder to prevent amount mismatch.
-             * Returns a Promise that resolves when totals are validated.
-             */
-            validateGrandTotal: function () {
-                var self = this;
-                return new Promise(function (resolve) {
-                    var currentGrandTotal = parseFloat(quote.totals().base_grand_total);
-                    var previousGrandTotal = parseFloat(self.grandTotal());
-
-                    if (previousGrandTotal !== currentGrandTotal) {
-                        self.logger('Grand total changed: ' + previousGrandTotal + ' → ' + currentGrandTotal);
-                        self.grandTotal(currentGrandTotal);
-                        // Re-render buttons with new amount
-                        var container = document.getElementById('paypal-button-container');
-                        if (container) {
-                            container.innerHTML = '';
-                            self.renderButtons();
-                        }
-                    }
-                    self.grandTotal(currentGrandTotal);
-                    resolve();
-                });
-            },
-
-            isActiveBcdc: function () {
-                return (this.isBcdcEnable && !this.isAcdcEnable);
-            },
-
-            isActiveAcdc: function () {
-                return this.isAcdcEnable;
-            },
-
-            isPayLaterEnabled: function () {
-                return this.paypalConfigs.funding && this.paypalConfigs.funding.paylater;
-            },
+            isActiveBcdc: function () { return (this.isBcdcEnable && !this.isAcdcEnable); },
+            isActiveAcdc: function () { return this.isAcdcEnable; },
 
             isSelected: function () {
-                if (quote.paymentMethod() && (quote.paymentMethod().method == this.paypalMethod)) {
-                    return this.selectedMethod;
+                var self = this;
+                if (quote.paymentMethod() && (quote.paymentMethod().method == self.paypalMethod)) {
+                    return self.selectedMethod;
                 }
                 return false;
             },
+
+            isRadioButtonVisible: function () { return true; },
 
             selectedPayPalMethod: function (method) {
                 var self = this;
@@ -122,9 +82,7 @@ define(
                 checkoutData.setSelectedPaymentMethod(self.item.method);
             },
 
-            isVisibleCard: function () {
-                return this.isAcdcEnable;
-            },
+            getCode: function () { return this.paypalMethod; },
 
             getTitleMethodPaypal: function () {
                 if (!this.isBcdcEnable && !this.isAcdcEnable) {
@@ -133,34 +91,26 @@ define(
                 return this.paypalConfigs.splitOptions.title_method_paypal;
             },
 
-            getTitleMethodCard: function () {
-                return this.paypalConfigs.splitOptions.title_method_card;
-            },
-
-            getCode: function (method) {
-                return method;
-            },
-
             getData: function () {
                 var self = this;
-                var paymentType = self.isAcdcEnable ? 'PayPal_Advanced' : 'PayPal_Basic';
-
-                var data = {
+                return {
                     method: self.paypalMethod,
                     additional_data: {
                         id: self.orderId,
                         order_id: self.orderId,
-                        payment_type: paymentType
+                        payment_type: self.isAcdcEnable ? 'PayPal_Advanced' : 'PayPal_Basic'
                     }
                 };
-
-                return data;
             },
 
-            /**
-             * Create PayPal order via server endpoint.
-             * Shared between PayPal button and HostedFields.
-             */
+            validateGrandTotal: function () {
+                var self = this;
+                return new Promise(function (resolve) {
+                    self.grandTotal(parseFloat(quote.totals().base_grand_total));
+                    resolve();
+                });
+            },
+
             createOrder: function () {
                 return fetch('/paypalcheckout/order', {
                     method: 'post',
@@ -170,81 +120,57 @@ define(
                     },
                     body: JSON.stringify({})
                 }).then(function (res) {
-                    if (res.ok) {
-                        return res.json();
-                    } else {
-                        return res.json().then(function (errData) {
-                            var errMsg = $t('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-                            if (errData && errData.reason) {
-                                try {
-                                    var parsed = JSON.parse(errData.reason);
-                                    if (parsed && parsed.message) {
-                                        errMsg = parsed.message;
-                                    }
-                                } catch (e) {
-                                    // Not JSON, use default message
-                                }
-                            }
-                            throw new Error(errMsg);
-                        });
-                    }
+                    if (res.ok) { return res.json(); }
+                    return res.json().then(function (errData) {
+                        var errMsg = $t('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+                        if (errData && errData.reason) {
+                            try {
+                                var parsed = JSON.parse(errData.reason);
+                                if (parsed && parsed.message) { errMsg = parsed.message; }
+                            } catch (e) { }
+                        }
+                        throw new Error(errMsg);
+                    });
                 }).then(function (data) {
-                    if (data && data.result && data.result.id) {
-                        return data.result.id;
-                    }
-                    if (data && data.reason) {
-                        throw new Error(data.reason);
-                    }
+                    if (data && data.result && data.result.id) { return data.result.id; }
+                    if (data && data.reason) { throw new Error(data.reason); }
                     throw new Error($t('PayPal Order konnte nicht erstellt werden.'));
                 });
             },
 
-            renderButton: function (fundingSource, elementId) {
+            renderButton: function (fundingSource, elementId, buttonStyle) {
                 var self = this;
 
-                if (typeof paypal === 'undefined') {
-                    $('#' + elementId).html($t('PayPal ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.'));
-                    return;
-                }
+                if (typeof paypal === 'undefined') { return; }
 
-                var buttonStyle = {};
-                if (self.paypalConfigs.style) {
-                    buttonStyle = {
-                        layout: self.paypalConfigs.style.layout || 'vertical',
-                        color: self.paypalConfigs.style.color || 'gold',
-                        shape: self.paypalConfigs.style.shape || 'pill',
-                        label: self.paypalConfigs.style.label || 'paypal',
-                        tagline: self.paypalConfigs.style.tagline === 'true'
-                    };
-                }
+                var defaultStyle = {
+                    layout: 'vertical',
+                    color: 'gold',
+                    shape: 'rect',
+                    label: 'paypal',
+                    height: 40,
+                    tagline: false
+                };
 
-                // For non-PayPal funding sources (Apple Pay, SEPA etc.), override style
-                if (fundingSource && fundingSource !== paypal.FUNDING.PAYPAL) {
-                    buttonStyle.layout = buttonStyle.layout || 'vertical';
-                    if (!buttonStyle.color) buttonStyle.color = 'black';
-                    if (!buttonStyle.shape) buttonStyle.shape = 'rect';
-                }
+                var styleConfig = Object.assign({}, defaultStyle, buttonStyle || {});
 
                 var button = paypal.Buttons({
-                    style: buttonStyle,
+                    style: styleConfig,
                     fundingSource: fundingSource,
                     createOrder: function () {
-                        self.logger('createOrder for fundingSource: ' + (fundingSource || 'default'));
                         return self.createOrder();
                     },
                     onApprove: function (data) {
                         self.orderId = data.orderID;
-                        self.validateGrandTotal().then(function () {
-                            self.placeOrder();
-                        });
+                        self.validateGrandTotal().then(function () { self.placeOrder(); });
                     },
                     onCancel: function () {
-                        self.logger('PayPal payment cancelled by user');
+                        console.log('[PayPal] Payment cancelled');
                     },
                     onError: function (err) {
-                        self.logger('PayPal button error', err);
+                        console.error('[PayPal] Button error', err);
                         self.messageContainer.addErrorMessage({
-                            message: $t('Die Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.')
+                            message: $t('Die Zahlung konnte nicht verarbeitet werden.')
                         });
                     }
                 });
@@ -252,111 +178,100 @@ define(
                 if (button.isEligible()) {
                     button.render('#' + elementId);
                 } else {
-                    self.logger('Button not eligible for fundingSource: ' + fundingSource);
                     var container = document.getElementById(elementId);
-                    if (container) {
-                        container.innerHTML = '';
-                        container.style.minHeight = '0';
-                    }
+                    if (container) { container.innerHTML = ''; container.style.display = 'none'; }
                 }
             },
 
             renderButtons: function () {
                 var self = this;
+                if (typeof paypal === 'undefined') { return; }
 
-                if (typeof paypal === 'undefined') {
-                    self.logger('PayPal SDK not loaded yet');
-                    return;
+                // PayPal Button (gold)
+                self.renderButton(paypal.FUNDING.PAYPAL, 'paypal-button-container', {
+                    color: 'gold',
+                    label: 'paypal',
+                    height: 40
+                });
+
+                // Pay Later / Ratenzahlung (black, label shows "Ratenzahlung")
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.paylater && paypal.FUNDING.PAYLATER) {
+                    self.renderButton(paypal.FUNDING.PAYLATER, 'paypal-paylater-container', {
+                        color: 'black',
+                        label: 'paylater',
+                        height: 35
+                    });
                 }
 
-                // Always render PayPal button
-                var paypalContainer = document.getElementById('paypal-button-container');
-                if (paypalContainer) {
-                    paypalContainer.innerHTML = '';
-                    self.renderButton(paypal.FUNDING.PAYPAL, 'paypal-button-container');
+                // SEPA Lastschrift (blue-grey)
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.sepa && paypal.FUNDING.SEPA) {
+                    self.renderButton(paypal.FUNDING.SEPA, 'paypal-sepa-container', {
+                        color: 'white',
+                        shape: 'rect',
+                        label: 'pay',
+                        height: 35
+                    });
                 }
 
-                // Render Pay Later button if enabled (separate from PayPal button)
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.paylater) {
-                    var paylaterContainer = document.getElementById('paypal-paylater-container');
-                    if (paylaterContainer) {
-                        paylaterContainer.innerHTML = '';
-                        self.renderButton(paypal.FUNDING.PAYLATER, 'paypal-paylater-container');
-                    }
+                // Trustly (Banküberweisung)
+                if (paypal.FUNDING.TRUSTLY) {
+                    self.renderButton(paypal.FUNDING.TRUSTLY, 'paypal-trustly-container', {
+                        color: 'black',
+                        label: 'pay',
+                        height: 35
+                    });
                 }
 
-                // Render SEPA button if enabled
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.sepa) {
-                    var sepaContainer = document.getElementById('paypal-sepa-container');
-                    if (sepaContainer) {
-                        sepaContainer.innerHTML = '';
-                        self.renderButton(paypal.FUNDING.SEPA, 'paypal-sepa-container');
-                    }
+                // Apple Pay
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.applepay && paypal.FUNDING.APPLE_PAY) {
+                    self.renderButton(paypal.FUNDING.APPLE_PAY, 'paypal-applepay-container', {
+                        color: 'black',
+                        label: 'apple',
+                        height: 40
+                    });
                 }
 
-                // Render Apple Pay button if eligible
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.applepay) {
-                    var applepayContainer = document.getElementById('paypal-applepay-container');
-                    if (applepayContainer) {
-                        applepayContainer.innerHTML = '';
-                        self.renderButton(paypal.FUNDING.APPLE_PAY, 'paypal-applepay-container');
-                    }
-                }
-
-                // Render Pay Later messages widget
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.messages) {
-                    var messagesContainer = document.getElementById('paypal-messages-container');
-                    if (messagesContainer && paypal.Messages) {
-                        paypal.Messages({
-                            amount: parseFloat(self.grandTotal()),
-                            currency: 'EUR',
-                            placement: 'payment'
-                        }).render('#paypal-messages-container');
-                    }
+                // Messages Widget (Ratenzahlung Info-Text)
+                if (self.paypalConfigs.funding && self.paypalConfigs.funding.messages && paypal.Messages) {
+                    paypal.Messages({
+                        amount: parseFloat(self.grandTotal()),
+                        currency: 'EUR',
+                        placement: 'payment'
+                    }).render('#paypal-messages-container');
                 }
             },
 
             completeRender: function () {
                 var self = this;
-
                 $('.ppcp.payment-method').removeClass('_active');
-                self.initializeEvents();
+                self.loadSdk();
                 self._enableCheckout();
-            },
-
-            initializeEvents: function () {
-                var self = this;
-
-                if (typeof paypal === 'undefined') {
-                    self.loadSdk();
-                    return;
-                }
-                self.renderButtons();
             },
 
             loadSdk: function () {
                 var self = this;
 
-                if (typeof paypal === 'undefined') {
-                    var body = $('body').loader();
-                    body.loader('show');
-
-                    paypalSdkAdapter.loadSdk(function () {
-                        self.renderButtons();
-                        body.loader('hide');
-                    });
+                if (typeof paypal !== 'undefined') {
+                    self.renderButtons();
+                    return;
                 }
+
+                var body = $('body').loader();
+                body.loader('show');
+
+                paypalSdkAdapter.loadSdk(function () {
+                    body.loader('hide');
+                    if (typeof paypal !== 'undefined') {
+                        self.renderButtons();
+                    } else {
+                        console.error('[PayPal PPCP] SDK loaded but paypal undefined');
+                    }
+                });
             },
 
             _enableCheckout: function () {
                 var body = $('body').loader();
                 body.loader('hide');
-            },
-
-            logger: function (message, obj) {
-                if (window.checkoutConfig.payment.paypalcp.debug) {
-                    console.log(message, obj);
-                }
             }
         });
     }

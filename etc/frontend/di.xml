@@ -7,4 +7,7 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Framework\App\Request\CsrfValidator">
+        <plugin name="paypal_webhook_csrf_bypass" type="PayPal\CommercePlatform\Plugin\WebhookCsrfBypass" sortOrder="1" />
+    </type>
 </config>

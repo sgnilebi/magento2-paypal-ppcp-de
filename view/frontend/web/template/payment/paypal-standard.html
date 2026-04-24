@@ -1,9 +1,9 @@
 <div class="ppcp payment-method"
-     data-bind="css: {'_active': ( 'paypalspb_paypal' == isSelected())}, attr: {isSel: isSelected()}">
+     data-bind="css: {'_active': ( 'paypalcp' == isSelected())}, attr: {isSel: isSelected()}">
     <div class="payment-method-title field choice">
         <input type="radio" name="payment[method]" class="radio"
-               data-bind="attr: {'id': getCode('paypalspb_paypal')}, value: 'paypalspb_paypal', checked: isChecked, click: selectedPayPalMethod('paypalspb_paypal'), visible: isRadioButtonVisible()" />
-        <label class="label" data-bind="attr: {'for': getCode('paypalspb_paypal')}">
+               data-bind="attr: {'id': getCode()}, value: 'paypalcp', checked: isChecked, click: function() { selectedPayPalMethod('paypalcp'); return true; }, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()}">
             <span data-bind="text: getTitleMethodPaypal()"></span>
         </label>
     </div>
@@ -13,15 +13,12 @@
         <!-- /ko -->
         <!-- /ko -->
 
-        <div id="paypal-button-container" style="min-height: 50px;"></div>
-
-        <!-- Additional funding source buttons -->
-        <div id="paypal-paylater-container" data-bind="visible: isPayLaterEnabled()" style="min-height: 50px; margin-top: 10px;"></div>
-        <div id="paypal-sepa-container" style="min-height: 50px; margin-top: 10px;"></div>
-        <div id="paypal-applepay-container" style="min-height: 50px; margin-top: 10px;"></div>
-
-        <!-- Pay Later messages widget -->
-        <div id="paypal-messages-container" data-bind="visible: isPayLaterEnabled()" style="margin-top: 10px;"></div>
+        <div id="paypal-button-container" style="min-height: 45px;"></div>
+        <div id="paypal-paylater-container" style="min-height: 40px; margin-top: 10px;"></div>
+        <div id="paypal-sepa-container" style="min-height: 40px; margin-top: 10px;"></div>
+        <div id="paypal-trustly-container" style="min-height: 40px; margin-top: 10px;"></div>
+        <div id="paypal-applepay-container" style="min-height: 40px; margin-top: 10px;"></div>
+        <div id="paypal-messages-container" style="margin-top: 10px;"></div>
 
         <div class="checkout-agreements-block">
             <!-- ko foreach: $parent.getRegion('before-place-order') -->
@@ -30,9 +27,9 @@
             <!-- /ko -->
         </div>
         <div class="actions-toolbar">
-            <div class="primary" data-bind="attr: {'id': getCode('paypalspb_paypal')}"></div>
+            <div class="primary" data-bind="attr: {'id': getCode()}"></div>
         </div>
     </div>
 </div>
 
-<div data-bind="afterRender:completeRender() "></div>
+<div data-bind="afterRender: completeRender() "></div>

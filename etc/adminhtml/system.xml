@@ -114,7 +114,7 @@
                         </field>
                         <field id="enable_applepay" type="select" sortOrder="123" showInWebsite="1" showInStore="1" showInDefault="1" translate="label">
                             <label>Apple Pay</label>
-                            <comment>PayPal übernimmt die Apple Merchant ID. Domain-Verifizierung im PayPal Dashboard nötig: Account Settings → Payment methods → Apple Pay → Domain hinzufügen. Nur auf Safari/iOS sichtbar.</comment>
+                            <comment>Erfordert Domain-Verifizierung im PayPal Dashboard und Apple Merchant ID. Nur auf Safari/iOS sichtbar.</comment>
                             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                             <config_path>payment/paypalcp/enable_applepay</config_path>
                         </field>
