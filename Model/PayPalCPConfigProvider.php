@@ -4,7 +4,9 @@
  * SECURITY FIX: authorizationBasic removed — never expose client secret to frontend!
  * Client token is generated server-side via /paypalcheckout/token/ endpoint
  * 
- * Funding sources for DE: SEPA, Pay Later, Apple Pay, Messages widget
+ * Funding sources for DE: SEPA, Pay Later, Card, Apple Pay, Messages widget
+ * Trustly removed — not a payment method we want
+ * Card added as separate button for direct credit/debit card payment
  */
 namespace PayPal\CommercePlatform\Model;
 
@@ -144,19 +146,19 @@ class PayPalCPConfigProvider implements \Magento\Checkout\Model\ConfigProviderIn
         if ($this->_paypalConfig->isEnableApplePay()) {
             $enableFunding[] = 'applepay';
         }
-        $enableFunding[] = "trustly";
+        // Card (Kreditkarte) — separate button for direct card payment without PayPal account
+        $enableFunding[] = 'card';
         if (!empty($enableFunding)) {
             $this->_params[self::SDK_CONFIG_ENABLE_FUNDING] = implode(',', $enableFunding);
         }
 
         // Disable funding sources we don't want
-        $disableFunding = ['credit']; // PayPal Credit not for DE
-        if (!$this->_paypalConfig->isEnableAcdc()) {
-            // When ACDC is off, don't disable card (let it show in PayPal popup)
-        } else {
-            // When ACDC is on, card is handled by hosted-fields, not the button
+        $disableFunding = ['credit', 'trustly']; // PayPal Credit not for DE, Trustly not wanted
+        if ($this->_paypalConfig->isEnableAcdc()) {
+            // When ACDC is on, card button is redundant — hosted-fields handles it
             $disableFunding[] = 'card';
         }
+        // When ACDC is off, card stays in enable-funding as a separate button
         $this->_params[self::SDK_CONFIG_DISABLE_FUNDING] = implode(',', $disableFunding);
     }
 

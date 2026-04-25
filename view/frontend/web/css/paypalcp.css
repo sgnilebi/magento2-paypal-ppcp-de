@@ -1,44 +1,435 @@
-/* PayPal PPCP Checkout Styles for DE */
+/* PayPal PPCP Checkout Styles for DE — v10 (Robust AGB alignment: works with BOTH template versions) */
 
-/* Payment method section */
+/* ============================================
+   PayPal Section
+   ============================================ */
 .ppcp.payment-method .payment-method-content {
-    padding: 10px 0 0 0;
+    padding: 15px 0 0 0;
+    position: relative;
 }
 
-/* Button containers */
-#paypal-button-container,
-#paypal-paylater-container,
-#paypal-applepay-container {
+/* ============================================
+   Vorkasse Section — position:relative for overlay
+   ============================================ */
+.vorkasse-method .payment-method-content {
+    position: relative;
+}
+
+/* ============================================
+   AGB Overlay — Blocks PayPal buttons AND Vorkasse when AGB not checked
+   ============================================ */
+.ppcp-agb-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.78);
+    cursor: not-allowed;
+    border-radius: 4px;
+}
+
+/* Show overlay when AGB not checked */
+.ppcp-agb-disabled .ppcp-agb-overlay,
+.ppcp-agb-disabled .vorkasse-agb-overlay {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.ppcp-agb-message {
+    margin-top: 30px;
+    padding: 12px 20px;
+    background: #fff3cd;
+    border: 2px solid #ffc439;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #856404;
+    text-align: center;
+    line-height: 1.5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-width: 380px;
+}
+
+.vorkasse-method .ppcp-agb-overlay .ppcp-agb-message {
+    margin-top: 15px;
+}
+
+.ppcp-agb-icon {
+    font-size: 20px;
+    margin-right: 6px;
+}
+
+/* Disabled state — dim everything under overlay */
+.ppcp-agb-disabled .payment-method-content > :not(.ppcp-agb-overlay):not(.vorkasse-agb-overlay) {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ============================================
+   PayPal Main Button Container
+   ============================================ */
+#paypal-button-container {
     max-width: 400px;
 }
 
-#paypal-button-container:empty,
-#paypal-paylater-container:empty,
-#paypal-applepay-container:empty {
+#paypal-button-container:empty {
+    min-height: 45px;
+}
+
+/* ============================================
+   Funding Source Separator & Labels
+   ============================================ */
+.ppcp-funding-separator {
+    max-width: 400px;
+}
+
+.ppcp-funding-separator:empty {
     min-height: 0;
     margin: 0;
+    padding: 0;
     display: none;
 }
 
-/* PayPal Messages */
+.ppcp-label-line {
+    max-width: 400px;
+    text-align: center;
+    margin: 4px 0 2px 0;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.ppcp-label-line span {
+    background: #fff;
+    padding: 0 8px;
+    position: relative;
+}
+
+.ppcp-sepa-note {
+    font-size: 11px;
+    color: #888;
+    font-style: italic;
+}
+
+.ppcp-card-note {
+    font-size: 13px;
+    color: #555;
+    font-weight: 600;
+}
+
+/* ============================================
+   Pay Later Messages Widget
+   ============================================ */
 #paypal-messages-container {
     text-align: center;
-    margin-top: 5px;
+    margin-top: 8px;
+    max-width: 400px;
+    font-size: 13px;
 }
 
 #paypal-messages-container:empty {
     display: none;
 }
 
-/* Notice text */
-.ppcp-notice {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #888;
-    line-height: 1.4;
+/* ============================================
+   PayPal Section Open by Default
+   ============================================ */
+.ppcp.payment-method._active .payment-method-content {
+    display: block;
 }
 
-/* Card submit button (for ACDC) */
+.ppcp.payment-method .payment-method-title {
+    cursor: pointer;
+}
+
+.ppcp.payment-method .payment-method-title .label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* ============================================
+   AGB / Checkout Agreements — v10 ROBUST ALIGNMENT
+   The checkbox and text must NEVER wrap or shift.
+   
+   TWO template variants are supported:
+   A) Our override: <div class="checkout-agreements-block"> + <span class="agreement-text">
+   B) Original Magento: <div data-role="checkout-agreements"> + <button class="action action-show">
+   
+   Every rule has BOTH selectors so it works regardless of which template is active.
+   ============================================ */
+
+/* Hide AGB inside each payment method accordion */
+.payment-method-content .checkout-agreements-block,
+.payment-method-content .checkout-agreements {
+    display: none !important;
+}
+
+/* Global AGB area (beforeMethods) — yellow box */
+.checkout-agreements-block,
+[data-role="checkout-agreements"] {
+    margin: 0 0 24px 0;
+    padding: 18px 20px;
+    background: #fffde7;
+    border: 2px solid #ffc439;
+    border-radius: 8px;
+}
+
+/* Each checkbox row — flexbox for perfect alignment */
+.checkout-agreements-block .checkout-agreement,
+.checkout-agreements .checkout-agreement {
+    margin: 14px 0;
+    padding: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+}
+
+/* Checkbox — fixed width, never moves */
+.checkout-agreements-block .checkout-agreement input[type="checkbox"],
+.checkout-agreements .checkout-agreement input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    margin: 2px 0 0 0;
+    padding: 0;
+    cursor: pointer;
+    accent-color: #003087;
+}
+
+/* Label — takes remaining width */
+.checkout-agreements-block .checkout-agreement label,
+.checkout-agreements .checkout-agreement label {
+    flex: 1;
+    margin: 0;
+    padding: 0 0 0 14px;
+    font-size: 15px;
+    line-height: 1.6;
+    cursor: pointer;
+    font-weight: 500;
+    color: #333;
+}
+
+/* The agreement text span (from template override) — inline */
+.checkout-agreements-block .checkout-agreement label .agreement-text,
+.checkout-agreements .checkout-agreement label .agreement-text {
+    display: inline;
+}
+
+/* The link inside the text — must be inline, not a block button */
+/* Works for BOTH: our <span class="agreement-text"> AND original <button class="action action-show"> */
+.checkout-agreements-block .checkout-agreement label .agreement-text .action-show,
+.checkout-agreements-block .checkout-agreement label .action-show,
+.checkout-agreements .checkout-agreement label .action-show,
+.checkout-agreement label > button.action-show {
+    display: inline;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-size: inherit;
+    font-weight: 600;
+    color: #003087;
+    text-decoration: underline;
+    cursor: pointer;
+    line-height: inherit;
+    vertical-align: baseline;
+}
+
+.checkout-agreements-block .checkout-agreement label .agreement-text .action-show:hover,
+.checkout-agreements-block .checkout-agreement label .action-show:hover,
+.checkout-agreements .checkout-agreement label .action-show:hover,
+.checkout-agreement label > button.action-show:hover {
+    color: #0055b3;
+}
+
+/* Also style the span inside the button to be inline */
+.checkout-agreements-block .checkout-agreement label .agreement-text .action-show span,
+.checkout-agreements-block .checkout-agreement label .action-show span,
+.checkout-agreements .checkout-agreement label .action-show span,
+.checkout-agreement label > button.action-show span {
+    display: inline;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* ============================================
+   Payment Method Radio Buttons — Larger, Professional
+   ============================================ */
+.payment-methods .payment-method {
+    margin: 0;
+    padding: 0;
+}
+
+.payment-method + .payment-method {
+    border-top: 1px solid #e0e0e0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.payment-method .payment-method-title {
+    display: flex;
+    align-items: center;
+    padding: 14px 0;
+    cursor: pointer;
+    min-height: 48px;
+}
+
+.payment-method .payment-method-title input[type="radio"] {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin: 0 12px 0 0;
+    cursor: pointer;
+    accent-color: #003087;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 2px solid #bbb;
+    border-radius: 50%;
+    background: #fff;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+.payment-method .payment-method-title input[type="radio"]:checked {
+    border-color: #003087;
+    background: #fff;
+}
+
+.payment-method .payment-method-title input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #003087;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.payment-method .payment-method-title .label {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+/* Remove default arrow/chevron since we use custom radio */
+.payment-method .payment-method-title .label::after,
+.payment-method._active .payment-method-title .label::after {
+    content: none;
+}
+
+/* ============================================
+   Vorkasse (Banktransfer) — Collapsible with spacing
+   ============================================ */
+.payment-method.ppcp + .payment-method {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.payment-method:not(._active) .payment-method-content {
+    display: none;
+}
+
+.payment-method._active .payment-method-content {
+    display: block;
+    padding: 8px 0 10px 0;
+}
+
+/* Vorkasse AGB Overlay */
+.vorkasse-method.ppcp-agb-disabled .payment-method-content > :not(.vorkasse-agb-overlay) {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ============================================
+   Vorkasse Place Order Button
+   ============================================ */
+.vorkasse-method .actions-toolbar .action.primary.checkout {
+    background: #003087;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    min-height: 48px;
+}
+
+.vorkasse-method .actions-toolbar .action.primary.checkout:hover {
+    background: #0055b3;
+}
+
+.vorkasse-method .actions-toolbar .action.primary.checkout.disabled,
+.vorkasse-method .actions-toolbar .action.primary.checkout[disabled] {
+    background: #999;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   Discount / Coupon Code
+   ============================================ */
+.opc-payment-additional.discount-code {
+    margin: 20px 0 10px 0;
+    padding: 12px 15px;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.opc-payment-additional.discount-code .payment-option-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.opc-payment-additional.discount-code .action-apply,
+.opc-payment-additional.discount-code .action-cancel {
+    background: #003087;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.opc-payment-additional.discount-code .action-apply:hover,
+.opc-payment-additional.discount-code .action-cancel:hover {
+    background: #0055b3;
+}
+
+/* ============================================
+   Notice / Error Messages
+   ============================================ */
+.ppcp-notice {
+    margin-top: 8px;
+    padding: 10px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+    background: #fff8e1;
+    border: 1px solid #ffc439;
+    border-radius: 4px;
+}
+
+.ppcp-cred-error {
+    padding: 15px;
+    color: #e02b27;
+    font-size: 14px;
+}
+
+/* ============================================
+   Card submit button (ACDC mode only)
+   ============================================ */
 .card_container button,
 #card-form button#submit {
     margin: 15px 0;
@@ -53,7 +444,9 @@
     color: #003087;
 }
 
-/* Loader */
+/* ============================================
+   Loading spinner
+   ============================================ */
 #loader {
     display: none;
     width: 60px;
@@ -86,19 +479,126 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Divider between payment methods */
+/* ============================================
+   Payment Method Divider (general fallback)
+   ============================================ */
 .payment-method + .payment-method {
     border-top: 1px solid #e0e0e0;
     margin-top: 10px;
     padding-top: 10px;
 }
 
-/* Credentials error message */
-.ppcp-cred-error {
-    padding: 15px;
-    color: #e02b27;
-    font-size: 14px;
+/* ============================================
+   Mobile Responsive — Checkout
+   ============================================ */
+@media screen and (max-width: 768px) {
+    /* AGB section — larger touch targets */
+    .checkout-agreements-block,
+    [data-role="checkout-agreements"] {
+        padding: 14px 16px;
+        border-radius: 6px;
+    }
+
+    .checkout-agreements-block .checkout-agreement,
+    .checkout-agreements .checkout-agreement {
+        margin: 12px 0;
+    }
+
+    .checkout-agreements-block .checkout-agreement input[type="checkbox"],
+    .checkout-agreements .checkout-agreement input[type="checkbox"] {
+        width: 26px;
+        height: 26px;
+        margin-top: 2px;
+    }
+
+    .checkout-agreements-block .checkout-agreement label,
+    .checkout-agreements .checkout-agreement label {
+        padding-left: 12px;
+        font-size: 15px;
+        line-height: 1.55;
+    }
+
+    /* Radio buttons — larger for touch */
+    .payment-method .payment-method-title input[type="radio"] {
+        width: 24px;
+        height: 24px;
+        margin: 0 10px 0 0;
+    }
+
+    .payment-method .payment-method-title input[type="radio"]:checked::after {
+        width: 14px;
+        height: 14px;
+    }
+
+    .payment-method .payment-method-title .label {
+        font-size: 16px;
+    }
+
+    .payment-method .payment-method-title {
+        padding: 12px 0;
+        min-height: 52px;
+    }
+
+    /* Vorkasse Place Order button */
+    .vorkasse-method .actions-toolbar .action.primary.checkout {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+
+    /* AGB overlay message */
+    .ppcp-agb-message {
+        margin-top: 20px;
+        padding: 10px 16px;
+        font-size: 13px;
+        max-width: 100%;
+    }
+
+    /* PayPal buttons max-width on mobile */
+    #paypal-button-container {
+        max-width: 100%;
+    }
 }
 
+@media screen and (max-width: 480px) {
+    .checkout-agreements-block .checkout-agreement input[type="checkbox"],
+    .checkout-agreements .checkout-agreement input[type="checkbox"] {
+        width: 28px;
+        height: 28px;
+        margin-top: 3px;
+    }
+
+    .checkout-agreements-block .checkout-agreement label,
+    .checkout-agreements .checkout-agreement label {
+        padding-left: 10px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .payment-method .payment-method-title input[type="radio"] {
+        width: 26px;
+        height: 26px;
+        margin: 0 8px 0 0;
+    }
+
+    .payment-method .payment-method-title input[type="radio"]:checked::after {
+        width: 15px;
+        height: 15px;
+    }
+
+    .payment-method .payment-method-title .label {
+        font-size: 15px;
+    }
+
+    .ppcp-agb-message {
+        margin-top: 15px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+}
+
+/* ============================================
+   Utility
+   ============================================ */
 .show { display: block !important; }
 .hide { display: none !important; }

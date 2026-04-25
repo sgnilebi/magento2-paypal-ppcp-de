@@ -1,3 +1,11 @@
+/**
+ * PayPal PPCP Smart Payment Buttons — v6
+ * 
+ * CHANGES v6:
+ * - AGB overlay now also covers Vorkasse (banktransfer) section
+ * - updateButtonState() toggles ppcp-agb-disabled on both .ppcp.payment-method and .vorkasse-method
+ * - validateAgb() scrolls to AGB and flashes border on both payment sections
+ */
 define(
     [
         'Magento_Checkout/js/view/payment/default',
@@ -36,27 +44,75 @@ define(
             isAcdcEnable: window.checkoutConfig.payment.paypalcp.acdc.enable,
             grandTotal: ko.observable(window.checkoutConfig.payment.paypalcp.grandTotal),
             isFormValid: ko.observable(false),
+            sdkLoaded: false,
+            buttonsRendered: false,
 
             initialize: function () {
                 this._super();
                 var self = this;
 
+                // Re-render buttons when grand total changes (e.g. coupon applied)
                 quote.totals.subscribe(function (totals) {
                     if (!totals || !totals.base_grand_total) { return; }
                     var current = parseFloat(totals.base_grand_total);
                     var previous = parseFloat(self.grandTotal());
                     if (previous !== current) {
                         self.grandTotal(current);
-                        var containers = ['paypal-button-container', 'paypal-paylater-container', 'paypal-sepa-container', 'paypal-trustly-container'];
-                        containers.forEach(function(id) {
-                            var el = document.getElementById(id);
-                            if (el) { el.innerHTML = ''; }
-                        });
                         self.renderButtons();
                     }
                 });
 
+                // Watch AGB checkboxes and enable/disable payment buttons
+                self.watchAgbCheckboxes();
+
                 return this;
+            },
+
+            /**
+             * Watch AGB/Widerruf checkboxes.
+             * When both are checked → enable PayPal buttons + Vorkasse.
+             * When not all checked → disable and show warning overlay.
+             */
+            watchAgbCheckboxes: function () {
+                var self = this;
+
+                var checkInterval = setInterval(function () {
+                    var $agbCheckboxes = $('div.checkout-agreements input[type="checkbox"]');
+                    if ($agbCheckboxes.length > 0) {
+                        clearInterval(checkInterval);
+                        self.updateButtonState();
+                        $agbCheckboxes.on('change', function () {
+                            self.updateButtonState();
+                        });
+                    }
+                }, 500);
+
+                setTimeout(function () {
+                    clearInterval(checkInterval);
+                }, 10000);
+            },
+
+            /**
+             * Enable or disable PayPal buttons AND Vorkasse "Place Order" based on AGB state.
+             */
+            updateButtonState: function () {
+                var $agbCheckboxes = $('div.checkout-agreements input[type="checkbox"]:visible');
+                var allChecked = true;
+
+                $agbCheckboxes.each(function () {
+                    if (!$(this).is(':checked')) {
+                        allChecked = false;
+                        return false;
+                    }
+                });
+
+                // Toggle on both PayPal section and Vorkasse section
+                var $paymentSections = $('.ppcp.payment-method, .vorkasse-method');
+                if (allChecked) {
+                    $paymentSections.removeClass('ppcp-agb-disabled');
+                } else {
+                    $paymentSections.addClass('ppcp-agb-disabled');
+                }
             },
 
             isActiveBcdc: function () { return (this.isBcdcEnable && !this.isAcdcEnable); },
@@ -111,7 +167,45 @@ define(
                 });
             },
 
+            /**
+             * Validate AGB before placing order.
+             * Scrolls to AGB section and flashes border if not checked.
+             */
+            validateAgb: function () {
+                var $agbCheckboxes = $('div.checkout-agreements input[type="checkbox"]:visible');
+                var allChecked = true;
+
+                $agbCheckboxes.each(function () {
+                    if (!$(this).is(':checked')) {
+                        allChecked = false;
+                        return false;
+                    }
+                });
+
+                if (!allChecked) {
+                    // Scroll to AGB section
+                    $('html, body').animate({
+                        scrollTop: $('.checkout-agreements-block').offset().top - 100
+                    }, 300);
+
+                    // Flash the AGB section border
+                    var $block = $('.checkout-agreements-block');
+                    $block.css('border-color', '#e02b27');
+                    setTimeout(function () {
+                        $block.css('border-color', '#ffc439');
+                    }, 2000);
+
+                    return false;
+                }
+
+                return true;
+            },
+
             createOrder: function () {
+                if (!this.validateAgb()) {
+                    return Promise.reject(new Error($t('Bitte stimmen Sie den AGB zu.')));
+                }
+
                 return fetch('/paypalcheckout/order', {
                     method: 'post',
                     headers: {
@@ -138,134 +232,170 @@ define(
                 });
             },
 
-            renderButton: function (fundingSource, elementId, buttonStyle) {
-                var self = this;
-
-                if (typeof paypal === 'undefined') { return; }
-
-                var defaultStyle = {
-                    layout: 'vertical',
-                    color: 'gold',
-                    shape: 'rect',
-                    label: 'paypal',
-                    height: 40,
-                    tagline: false
-                };
-
-                var styleConfig = Object.assign({}, defaultStyle, buttonStyle || {});
-
-                var button = paypal.Buttons({
-                    style: styleConfig,
-                    fundingSource: fundingSource,
-                    createOrder: function () {
-                        return self.createOrder();
-                    },
-                    onApprove: function (data) {
-                        self.orderId = data.orderID;
-                        self.validateGrandTotal().then(function () { self.placeOrder(); });
-                    },
-                    onCancel: function () {
-                        console.log('[PayPal] Payment cancelled');
-                    },
-                    onError: function (err) {
-                        console.error('[PayPal] Button error', err);
-                        self.messageContainer.addErrorMessage({
-                            message: $t('Die Zahlung konnte nicht verarbeitet werden.')
-                        });
-                    }
-                });
-
-                if (button.isEligible()) {
-                    button.render('#' + elementId);
-                } else {
-                    var container = document.getElementById(elementId);
-                    if (container) { container.innerHTML = ''; container.style.display = 'none'; }
-                }
-            },
-
+            /**
+             * Render PayPal payment buttons.
+             */
             renderButtons: function () {
                 var self = this;
+
                 if (typeof paypal === 'undefined') { return; }
 
-                // PayPal Button (gold)
-                self.renderButton(paypal.FUNDING.PAYPAL, 'paypal-button-container', {
-                    color: 'gold',
-                    label: 'paypal',
-                    height: 40
+                var mainContainer = document.getElementById('paypal-button-container');
+                if (!mainContainer) { return; }
+
+                mainContainer.innerHTML = '';
+
+                var subContainers = ['paypal-paylater-container', 'paypal-sepa-container', 'paypal-card-container', 'paypal-applepay-container'];
+                subContainers.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) { el.innerHTML = ''; }
                 });
 
-                // Pay Later / Ratenzahlung (black, label shows "Ratenzahlung")
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.paylater && paypal.FUNDING.PAYLATER) {
-                    self.renderButton(paypal.FUNDING.PAYLATER, 'paypal-paylater-container', {
-                        color: 'black',
-                        label: 'paylater',
-                        height: 35
+                self.buttonsRendered = false;
+
+                try {
+                    var paypalBtn = paypal.Buttons({
+                        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal', height: 40, tagline: false },
+                        fundingSource: paypal.FUNDING.PAYPAL,
+                        createOrder: function () { return self.createOrder(); },
+                        onApprove: function (data) {
+                            self.orderId = data.orderID;
+                            self.validateGrandTotal().then(function () { self.placeOrder(); });
+                        },
+                        onCancel: function () { console.log('[PayPal PPCP] PayPal payment cancelled'); },
+                        onError: function (err) {
+                            console.error('[PayPal PPCP] PayPal button error', err);
+                            self.messageContainer.addErrorMessage({ message: $t('Die Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.') });
+                        }
                     });
+
+                    if (paypalBtn.isEligible()) {
+                        paypalBtn.render('#paypal-button-container');
+                        self.buttonsRendered = true;
+                    }
+
+                    if (self.paypalConfigs.funding && self.paypalConfigs.funding.paylater && paypal.FUNDING.PAYLATER) {
+                        var paylaterBtn = paypal.Buttons({
+                            style: { layout: 'vertical', color: 'black', shape: 'rect', label: 'paylater', height: 35, tagline: false },
+                            fundingSource: paypal.FUNDING.PAYLATER,
+                            createOrder: function () { return self.createOrder(); },
+                            onApprove: function (data) {
+                                self.orderId = data.orderID;
+                                self.validateGrandTotal().then(function () { self.placeOrder(); });
+                            },
+                            onCancel: function () {},
+                            onError: function (err) {
+                                self.messageContainer.addErrorMessage({ message: $t('Die Ratenzahlung konnte nicht verarbeitet werden.') });
+                            }
+                        });
+                        if (paylaterBtn.isEligible()) { paylaterBtn.render('#paypal-paylater-container'); }
+                        else { var plC = document.getElementById('paypal-paylater-container'); if (plC) { plC.style.display = 'none'; } }
+                    }
+
+                    if (self.paypalConfigs.funding && self.paypalConfigs.funding.sepa && paypal.FUNDING.SEPA) {
+                        var sepaBtn = paypal.Buttons({
+                            style: { layout: 'vertical', color: 'white', shape: 'rect', label: 'pay', height: 35, tagline: false },
+                            fundingSource: paypal.FUNDING.SEPA,
+                            createOrder: function () { return self.createOrder(); },
+                            onApprove: function (data) {
+                                self.orderId = data.orderID;
+                                self.validateGrandTotal().then(function () { self.placeOrder(); });
+                            },
+                            onCancel: function () {},
+                            onError: function (err) {
+                                self.messageContainer.addErrorMessage({ message: $t('Die SEPA-Lastschrift konnte nicht verarbeitet werden.') });
+                            }
+                        });
+                        if (sepaBtn.isEligible()) { sepaBtn.render('#paypal-sepa-container'); }
+                        else { var sepaC = document.getElementById('paypal-sepa-container'); if (sepaC) { sepaC.style.display = 'none'; } }
+                    }
+
+                    if (paypal.FUNDING.CARD) {
+                        var cardBtn = paypal.Buttons({
+                            style: { layout: 'vertical', color: 'black', shape: 'rect', label: 'pay', height: 35, tagline: false },
+                            fundingSource: paypal.FUNDING.CARD,
+                            createOrder: function () { return self.createOrder(); },
+                            onApprove: function (data) {
+                                self.orderId = data.orderID;
+                                self.validateGrandTotal().then(function () { self.placeOrder(); });
+                            },
+                            onCancel: function () {},
+                            onError: function (err) {
+                                self.messageContainer.addErrorMessage({ message: $t('Die Kartenzahlung konnte nicht verarbeitet werden.') });
+                            }
+                        });
+                        if (cardBtn.isEligible()) { cardBtn.render('#paypal-card-container'); }
+                        else {
+                            var cardC = document.getElementById('paypal-card-container');
+                            if (cardC) { cardC.style.display = 'none'; }
+                            var cardLabel = cardC ? cardC.nextElementSibling : null;
+                            if (cardLabel && cardLabel.classList.contains('ppcp-label-line')) { cardLabel.style.display = 'none'; }
+                        }
+                    }
+
+                    if (self.paypalConfigs.funding && self.paypalConfigs.funding.applepay && paypal.FUNDING.APPLE_PAY) {
+                        var appleBtn = paypal.Buttons({
+                            style: { layout: 'vertical', color: 'black', shape: 'rect', label: 'apple', height: 40, tagline: false },
+                            fundingSource: paypal.FUNDING.APPLE_PAY,
+                            createOrder: function () { return self.createOrder(); },
+                            onApprove: function (data) {
+                                self.orderId = data.orderID;
+                                self.validateGrandTotal().then(function () { self.placeOrder(); });
+                            },
+                            onCancel: function () {},
+                            onError: function (err) { console.error('[PayPal PPCP] Apple Pay button error', err); }
+                        });
+                        if (appleBtn.isEligible()) { appleBtn.render('#paypal-applepay-container'); }
+                        else { var appleC = document.getElementById('paypal-applepay-container'); if (appleC) { appleC.style.display = 'none'; } }
+                    }
+
+                    console.log('[PayPal PPCP] All buttons rendered');
+                    self.updateButtonState();
+
+                } catch (err) {
+                    console.error('[PayPal PPCP] renderButtons error:', err);
+                    mainContainer.innerHTML = '<div class="ppcp-notice">' + $t('PayPal Buttons konnten nicht geladen werden.') + '</div>';
                 }
 
-                // SEPA Lastschrift (blue-grey)
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.sepa && paypal.FUNDING.SEPA) {
-                    self.renderButton(paypal.FUNDING.SEPA, 'paypal-sepa-container', {
-                        color: 'white',
-                        shape: 'rect',
-                        label: 'pay',
-                        height: 35
-                    });
-                }
-
-                // Trustly (Banküberweisung)
-                if (paypal.FUNDING.TRUSTLY) {
-                    self.renderButton(paypal.FUNDING.TRUSTLY, 'paypal-trustly-container', {
-                        color: 'black',
-                        label: 'pay',
-                        height: 35
-                    });
-                }
-
-                // Apple Pay
-                if (self.paypalConfigs.funding && self.paypalConfigs.funding.applepay && paypal.FUNDING.APPLE_PAY) {
-                    self.renderButton(paypal.FUNDING.APPLE_PAY, 'paypal-applepay-container', {
-                        color: 'black',
-                        label: 'apple',
-                        height: 40
-                    });
-                }
-
-                // Messages Widget (Ratenzahlung Info-Text)
                 if (self.paypalConfigs.funding && self.paypalConfigs.funding.messages && paypal.Messages) {
-                    paypal.Messages({
-                        amount: parseFloat(self.grandTotal()),
-                        currency: 'EUR',
-                        placement: 'payment'
-                    }).render('#paypal-messages-container');
+                    try {
+                        var msgContainer = document.getElementById('paypal-messages-container');
+                        if (msgContainer) {
+                            paypal.Messages({
+                                amount: parseFloat(self.grandTotal()),
+                                currency: 'EUR',
+                                placement: 'payment'
+                            }).render('#paypal-messages-container');
+                        }
+                    } catch (e) { console.warn('[PayPal PPCP] Messages widget error:', e); }
                 }
             },
 
             completeRender: function () {
                 var self = this;
-                $('.ppcp.payment-method').removeClass('_active');
+                var paypalSection = $('.ppcp.payment-method');
+                if (paypalSection.length && !paypalSection.hasClass('_active')) {
+                    paypalSection.addClass('_active');
+                }
                 self.loadSdk();
                 self._enableCheckout();
             },
 
             loadSdk: function () {
                 var self = this;
-
                 if (typeof paypal !== 'undefined') {
+                    self.sdkLoaded = true;
                     self.renderButtons();
                     return;
                 }
-
+                if (self.sdkLoaded) { return; }
                 var body = $('body').loader();
                 body.loader('show');
-
                 paypalSdkAdapter.loadSdk(function () {
                     body.loader('hide');
-                    if (typeof paypal !== 'undefined') {
-                        self.renderButtons();
-                    } else {
-                        console.error('[PayPal PPCP] SDK loaded but paypal undefined');
-                    }
+                    self.sdkLoaded = true;
+                    if (typeof paypal !== 'undefined') { self.renderButtons(); }
+                    else { console.error('[PayPal PPCP] SDK loaded but paypal undefined'); }
                 });
             },
 
