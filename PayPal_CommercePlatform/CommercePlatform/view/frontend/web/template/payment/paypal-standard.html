@@ -1,0 +1,62 @@
+<div class="ppcp payment-method"
+     data-bind="css: {'_active': ('paypalcp' == isSelected())}, attr: {isSel: isSelected()}">
+    <div class="payment-method-title field choice">
+        <input type="radio" name="payment[method]" class="radio"
+               data-bind="attr: {'id': getCode()}, value: 'paypalcp', checked: isChecked, click: function() { selectedPayPalMethod('paypalcp'); return true; }, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()}">
+            <span data-bind="text: getTitleMethodPaypal()"></span>
+        </label>
+    </div>
+    <div class="payment-method-content">
+        <!-- ko foreach: getRegion('messages') -->
+        <!-- ko template: getTemplate() -->
+        <!-- /ko -->
+        <!-- /ko -->
+
+        <!-- AGB warning overlay — covers PayPal buttons when AGB not checked -->
+        <div class="ppcp-agb-overlay">
+            <div class="ppcp-agb-message">
+                <span class="ppcp-agb-icon">⚠️</span>
+                Bitte zuerst AGB und Widerruf bestätigen
+            </div>
+        </div>
+
+        <!-- PayPal main button -->
+        <div id="paypal-button-container"></div>
+
+        <!-- Pay Later / Ratenzahlung -->
+        <div id="paypal-paylater-container" class="ppcp-funding-separator"></div>
+        <div class="ppcp-label-line"><span>Oder in Raten zahlen</span></div>
+
+        <!-- SEPA Lastschrift -->
+        <div id="paypal-sepa-container" class="ppcp-funding-separator"></div>
+        <div class="ppcp-label-line ppcp-sepa-note"><span>SEPA-Lastschrift (PayPal-Konto erforderlich)</span></div>
+
+        <!-- Kreditkarte / Debitkarte (CARD) -->
+        <div id="paypal-card-container" class="ppcp-funding-separator"></div>
+        <div class="ppcp-label-line ppcp-card-note"><span>Kreditkarte / Debitkarte</span></div>
+
+        <!-- Apple Pay -->
+        <div id="paypal-applepay-container" class="ppcp-funding-separator"></div>
+
+        <!-- Google Pay -->
+        <div id="paypal-googlepay-container" class="ppcp-funding-separator"></div>
+        <div class="ppcp-label-line ppcp-googlepay-note"><span>Google Pay</span></div>
+
+        <!-- Trustly (Sofortüberweisung) -->
+        <div id="paypal-trustly-container" class="ppcp-funding-separator"></div>
+        <div class="ppcp-label-line ppcp-trustly-note"><span>Sofortüberweisung via Trustly</span></div>
+
+        <!-- Pay Later Messages widget (installment info text) -->
+        <div id="paypal-messages-container"></div>
+
+        <div class="actions-toolbar">
+            <div class="primary" data-bind="attr: {'id': getCode()}"></div>
+        </div>
+    </div>
+</div>
+
+<!-- AGB/Widerruf checkboxes are now GLOBAL (above payment methods in beforeMethods),
+     handled by checkout-agreements-block in checkout_index_index.xml -->
+
+<div data-bind="afterRender: completeRender() "></div>

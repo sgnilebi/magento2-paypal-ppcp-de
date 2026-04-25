@@ -1,0 +1,5 @@
+/lib/
+*.bak
+*.bak2
+/Model/Backup_*/
+/Model/*.backup.*
