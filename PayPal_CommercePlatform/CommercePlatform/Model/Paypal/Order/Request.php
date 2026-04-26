@@ -124,17 +124,6 @@ class Request
         }
         $requestBody = $this->buildRequestBody();
 
-        // PSD2 / 3D Secure: SCA_WHEN_REQUIRED triggers 3DS when mandated by EU regulation
-        $requestBody['payment_source'] = [
-            'card' => [
-                'attributes' => [
-                    'verification' => [
-                        'method' => 'SCA_WHEN_REQUIRED'
-                    ]
-                ]
-            ]
-        ];
-
         if ($paypalCMID) {
             $this->_orderCreateRequest->headers[self::PAYPAL_CLIENT_METADATA_ID_HEADER] = $paypalCMID;
         }
@@ -165,7 +154,17 @@ class Request
         }
 
         $currencyCode = $this->_quote->getBaseCurrencyCode();
-        $amount = $this->_formatPrice($this->_quote->getGrandTotal());
+        $discount = abs($this->_cartPayment->getBaseDiscountAmount() ?: 0);
+        $giftCard = abs($this->_quote->getBaseGiftCardsAmountUsed() ?: 0);
+        $storeCredit = abs($this->_quote->getBaseCustomerBalAmountUsed() ?: 0);
+        $amount = $this->_formatPrice(
+            $this->_cartPayment->getBaseSubtotal()
+            + $this->_cartPayment->getBaseShippingAmount()
+            + $this->_cartPayment->getBaseTaxAmount()
+            - $discount
+            - $giftCard
+            - $storeCredit
+        );
         $subtotal = $this->_formatPrice($this->_cartPayment->getBaseSubtotal());
         $shippingAmount = $this->_formatPrice($this->_cartPayment->getBaseShippingAmount());
         $taxAmount = $this->_formatPrice($this->_cartPayment->getBaseTaxAmount());
