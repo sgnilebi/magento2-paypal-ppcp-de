@@ -2,13 +2,16 @@
 
 **DE/EUR-Anpassung** des QBO Mexico PayPal Commerce Platform Moduls für [meinereitwelt.de](https://www.meinereitwelt.de)
 
-## Status (25.04.2026)
+## Status (26.04.2026)
 
 - ✅ Modul aktiv, Live-Modus (sandbox_flag=0)
 - ✅ PayPal Popup öffnet sich (Live)
 - ✅ 5 Funding-Quellen: PAYPAL, PAYLATER, SEPA, CARD, APPLE_PAY
 - ✅ AGB-Overlay für PayPal + Vorkasse (CSS v10)
 - ✅ Responsives Design (480px–1024px+)
+- ✅ **AMOUNT_MISMATCH Fix** — Amount jetzt aus Einzelkomponenten, nicht `getGrandTotal()` (26.04.2026)
+- ✅ **SCA_WHEN_REQUIRED entfernt** von Smart Buttons — nur noch bei ACDC/Karten-Flow (26.04.2026)
+- ✅ **PaymentData Warnung identifiziert** — harmlose M2.2.3 Limitation
 
 ## Funding-Konfiguration
 

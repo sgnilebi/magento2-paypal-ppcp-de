@@ -1,5 +1,24 @@
 # Changelog — PayPal PPCP (CommercePlatform) für Magento 2.2.3
 
+## v2.2 (26.04.2026) — CRITICAL PayPal API Fixes
+
+### 🐛 CRITICAL Behoben
+- **AMOUNT_MISMATCH (304.00€ Bestellungen abgelehnt)**:
+  - **Ursache:** `$amount = getGrandTotal()` rundete SUMME aller Komponenten anders als PayPal's `breakdown`-Validierung
+  - **Fix:** `amount` jetzt aus Einzelkomponenten berechnet: `subtotal + shipping + tax - discount - giftcard - storecredit`
+  - **Commit:** `bc4270d` (legacy/v2.1) + `30679a0` (main/v7)
+  
+- **SCA_WHEN_REQUIRED auf Smart Buttons (UNPROCESSABLE_ENTITY)**:
+  - **Ursache:** `payment_source.card` mit `SCA_WHEN_REQUIRED` wurde für ALLE Zahlungen gesetzt (nicht nur Kreditkarten)
+  - **Fix:** Block aus `createRequest()` entfernt, triggert nur noch bei ACDC/Card-Flow
+  - **Commit:** gleicher wie oben
+
+### 🔍 Analyse-Ergebnisse
+- QBO (Mexicaner) hat `AMOUNT_MISMATCH` in `Model/Payment/Advanced/Payment.php` NUR bei Capture validiert, nicht bei Order Create
+- Magento 2.2.3 `PaymentInterface` hat KEINEN `paymentData` Setter → `Property "PaymentData" does not have corresponding setter` (separates, harmoses Problem)
+
+---
+
 ## v2.1 (25.04.2026) — AGB-Overlays, Vorkasse-Integration, CSS v10
 
 ### ✨ Neu

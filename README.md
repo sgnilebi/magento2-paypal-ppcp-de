@@ -25,8 +25,9 @@
 - ✅ 5 funding sources: PAYPAL, PAYLATER, SEPA, CARD, APPLE_PAY
 - ✅ AGB overlay for PayPal + bank transfer (CSS v10)
 - ✅ Responsive design (480px–1024px+)
-- ✅ **AMOUNT_MISMATCH fix** (26.04.2026)
-- ✅ **SCA_WHEN_REQUIRED removed** from Smart Buttons (26.04.2026)
+- ✅ **AMOUNT_MISMATCH fix** — amount now from component sum, not `getGrandTotal()` (26.04.2026)
+- ✅ **SCA_WHEN_REQUIRED removed** from Smart Buttons — only in ACDC/card flow (26.04.2026)
+- ✅ **PaymentData warning identified** — harmless M2.2.3 limitation (webapi noise only)
 
 ## Funding Configuration
 

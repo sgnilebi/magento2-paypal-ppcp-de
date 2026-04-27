@@ -1,4 +1,20 @@
-# Layout-Probleme — PayPal PPCP Checkout (Offen)
+# Layout-Probleme — PayPal PPCP Checkout
+
+## Stand: 26.04.2026
+
+✅ **Alle CRITICAL Bugs behoben** (v2.2, 26.04.2026). Layout-Probleme sind kosmetisch.
+
+---
+
+## ✅ Behoben: CRITICAL – AMOUNT_MISMATCH (v2.2, 26.04.)
+
+**Fix:** Siehe CHANGELOG.md und README.md / README_DE.md
+
+---
+
+## ✅ Behoben: CRITICAL – SCA_WHEN_REQUIRED (v2.2, 26.04.)
+
+**Fix:** Siehe CHANGELOG.md und README.md / README_DE.md
 
 ## Stand: 24.04.2026
 
