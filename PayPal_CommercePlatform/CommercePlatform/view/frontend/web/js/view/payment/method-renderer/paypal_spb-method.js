@@ -152,12 +152,19 @@ define(
 
             getData: function () {
                 var self = this;
+                var agreementIds = [];
+                jQuery('div.checkout-agreements input[type="checkbox"]:checked').each(function () {
+                    agreementIds.push(jQuery(this).val());
+                });
                 return {
                     method: self.paypalMethod,
                     additional_data: {
                         id: self.orderId,
                         order_id: self.orderId,
                         payment_type: self.isAcdcEnable ? 'PayPal_Advanced' : 'PayPal_Basic'
+                    },
+                    extension_attributes: {
+                        agreement_ids: agreementIds
                     }
                 };
             },

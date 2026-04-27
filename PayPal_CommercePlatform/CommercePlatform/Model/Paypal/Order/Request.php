@@ -124,6 +124,7 @@ class Request
         }
         $requestBody = $this->buildRequestBody();
 
+
         if ($paypalCMID) {
             $this->_orderCreateRequest->headers[self::PAYPAL_CLIENT_METADATA_ID_HEADER] = $paypalCMID;
         }

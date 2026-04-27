@@ -239,10 +239,17 @@ define(
 
             getData: function () {
                 var self = this;
+                var agreementIds = [];
+                jQuery('div.checkout-agreements input[type="checkbox"]:checked').each(function () {
+                    agreementIds.push(jQuery(this).val());
+                });
                 return {
                     method: self.paypalMethod,
                     additional_data: {
                         order_id: self.orderId
+                    },
+                    extension_attributes: {
+                        agreement_ids: agreementIds
                     }
                 };
             },
